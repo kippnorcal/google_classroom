@@ -144,3 +144,5 @@ static
 
 # project specific
 *.csv
+*.json
+*.pickle
