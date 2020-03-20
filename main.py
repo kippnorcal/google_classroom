@@ -10,13 +10,35 @@ from google.auth.transport.requests import Request
 import pandas as pd
 from sqlsorcery import MSSQL
 
-# If modifying these scopes, delete the file token.pickle.
+
+
+def build_service():
+    # If modifying these scopes, delete the file token.pickle.
 SCOPES = [
     "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly",
     "https://www.googleapis.com/auth/classroom.courses",
     "https://www.googleapis.com/auth/classroom.rosters",
 ]
+    creds = None
+    # The file token.pickle stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists("token.pickle"):
+        with open("token.pickle", "rb") as token:
+            creds = pickle.load(token)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
+            creds = flow.run_local_server(port=0)
+        # Save the credentials for the next run
+        with open("token.pickle", "wb") as token:
+            pickle.dump(creds, token)
 
+    service = build("classroom", "v1", credentials=creds)
+    return service
 
 def get_courses(service):
     # Get all paginated courses
@@ -53,32 +75,9 @@ def get_teachers(service, course_ids):
 
 
 def main():
-    """Shows basic usage of the Classroom API.
-    Prints the names of the first 10 courses the user has access to.
-    """
-    creds = None
-    # The file token.pickle stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists("token.pickle"):
-        with open("token.pickle", "rb") as token:
-            creds = pickle.load(token)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open("token.pickle", "wb") as token:
-            pickle.dump(creds, token)
+    service = build_service()
 
-    service = build("classroom", "v1", credentials=creds)
-
-    # Call the Classroom API
-    # results = service.courses().courseWork().list(pageSize=10).execute()
-    # results = (
+    # coursework = (
     #     service.courses()
     #     .courseWork()
     #     .studentSubmissions()
@@ -87,7 +86,7 @@ def main():
     # )
 
     # with open("coursework.json", "w", encoding="utf-8") as f:
-    #     json.dump(results, f, ensure_ascii=False, indent=4)
+    #     json.dump(coursework, f, ensure_ascii=False, indent=4)
 
     sql = MSSQL()
     # Get courses
