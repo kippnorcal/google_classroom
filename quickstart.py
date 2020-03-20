@@ -5,16 +5,12 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
-# If modifying these scopes, delete the file token.pickle.
-SCOPES = [
-    "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly"
-]
 
-
-def main():
-    """Shows basic usage of the Classroom API.
-    Prints the names of the first 10 courses the user has access to.
-    """
+def build_service():
+    # If modifying these scopes, delete the file token.pickle.
+    SCOPES = [
+        "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly"
+    ]
     creds = None
     # The file token.pickle stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -34,9 +30,11 @@ def main():
             pickle.dump(creds, token)
 
     service = build("classroom", "v1", credentials=creds)
+    return service
 
-    # Call the Classroom API
-    # results = service.courses().courseWork().list(pageSize=10).execute()
+
+def main():
+    service = build_service()
     results = (
         service.courses()
         .courseWork()
