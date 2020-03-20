@@ -41,7 +41,7 @@ def build_service():
 
 
 def get_courses(service):
-    # Get all paginated courses
+    """Get all paginated courses"""
     all_courses = []
     next_page_token = ""
     while next_page_token is not None:
@@ -53,7 +53,7 @@ def get_courses(service):
 
 
 def get_students(service, course_ids):
-    # For the given courses, get the list of students. Can take a while for a large number of courses.
+    """For the given courses, get the list of students. Can take a while for a large number of courses."""
     all_students = []
     for course_id in course_ids:
         print(f"getting students for {course_id}")
@@ -64,7 +64,7 @@ def get_students(service, course_ids):
 
 
 def get_teachers(service, course_ids):
-    # For the given courses, get the list of teachers. Can take a while for a large number of courses.
+    """For the given courses, get the list of teachers. Can take a while for a large number of courses."""
     all_teachers = []
     for course_id in course_ids:
         print(f"getting teachers for {course_id}")
@@ -75,7 +75,7 @@ def get_teachers(service, course_ids):
 
 
 def get_student_submissions(service, course_ids):
-    # For the given courses, get the list of student coursework submissions.
+    """For the given courses, get the list of student coursework submissions."""
     all_submissions = []
     for course_id in course_ids:
         print(f"getting student submissions for {course_id}")
@@ -154,20 +154,20 @@ def main():
     courses = get_courses(service)
     courses = json_normalize(courses)
     courses = courses.astype(str)
-    # sql.insert_into("GoogleClassroom_Courses", courses)  # this is erroring on insertion
+    sql.insert_into("GoogleClassroom_Courses", courses, if_exists="replace")
     course_ids = courses.id.unique()
 
     # Get students and insert into database
     students = get_students(service, course_ids)
     students = json_normalize(students)
     students = students.astype(str)
-    sql.insert_into("GoogleClassroom_Students", students)
+    sql.insert_into("GoogleClassroom_Students", students, if_exists="replace")
 
     # Get teachers and insert into database
     teachers = get_teachers(service, course_ids)
     teachers = json_normalize(teachers)
     teachers = teachers.astype(str)
-    sql.insert_into("GoogleClassroom_Teachers", teachers)
+    sql.insert_into("GoogleClassroom_Teachers", teachers, if_exists="replace")
 
     # Get student coursework submissions
     student_submissions = get_student_submissions(service, course_ids)
