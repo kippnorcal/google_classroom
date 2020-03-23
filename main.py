@@ -1,5 +1,4 @@
 import json
-from pandas import json_normalize
 
 import pickle
 import os.path
@@ -8,6 +7,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
 import pandas as pd
+from pandas import json_normalize
 from sqlsorcery import MSSQL
 
 
@@ -16,6 +16,7 @@ def build_service():
     SCOPES = [
         "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly",
         "https://www.googleapis.com/auth/classroom.courses",
+        "https://www.googleapis.com/auth/classroom.topics",
         "https://www.googleapis.com/auth/classroom.rosters",
     ]
     creds = None
@@ -50,6 +51,17 @@ def get_courses(service):
         next_page_token = results.get("nextPageToken", None)
         all_courses.extend(courses)
     return all_courses
+
+
+def get_course_topics(service, course_ids):
+    """Get all course topics"""
+    all_course_topics = []
+    for course_id in course_ids:
+        print(f"getting course topics for {course_id}")
+        results = service.courses().topics().list(courseId=course_id).execute()
+        topics = results.get("topic", [])
+        all_course_topics.extend(topics)
+    return all_course_topics
 
 
 def get_students(service, course_ids):
@@ -156,6 +168,12 @@ def main():
     courses = courses.astype(str)
     sql.insert_into("GoogleClassroom_Courses", courses, if_exists="replace")
     course_ids = courses.id.unique()
+
+    # Get course topics
+    course_topics = get_course_topics(service, course_ids)
+    course_topics = json_normalize(course_topics)
+    course_topics = course_topics.astype(str)
+    sql.insert_into("GoogleClassroom_CourseTopics", course_topics, if_exists="replace")
 
     # Get students and insert into database
     students = get_students(service, course_ids)
