@@ -24,6 +24,9 @@ DB=
 DB_USER=
 DB_PWD=
 DB_SCHEMA=
+
+# Google API variables
+STUDENT_ORG_UNIT=alphanumeric string id for the org unit (retrieve through Admin API)
 ```
 
 ### Running the job
