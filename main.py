@@ -95,14 +95,24 @@ def parse_classroom_last_used(parameters):
 
 def get_courses(service):
     """Get all paginated courses"""
-    all_courses = []
     next_page_token = ""
     while next_page_token is not None:
         results = service.courses().list(pageToken=next_page_token).execute()
         courses = results.get("courses", [])
         next_page_token = results.get("nextPageToken", None)
-        all_courses.extend(courses)
-    return all_courses
+        write_json(courses, "data/courses.json")
+
+
+def write_json(records, filename):
+    if os.path.exists(filename):
+        with open(filename, "r+") as f:
+            data = json.load(f)
+            data.extend(records)
+            f.seek(0)
+            json.dump(data, f)
+    else:
+        with open(filename, "w") as f:
+            json.dump(records, f)
 
 
 def get_course_topics(service, course_ids):
@@ -221,9 +231,26 @@ def main():
     get_classroom_student_usage(sql, admin_service)
 
     # Get courses
-    courses = get_courses(classroom_service)
-    courses = pd.json_normalize(courses)
-    courses = courses.astype(str)
+    get_courses(classroom_service)
+    courses = pd.read_json("data/courses.json")
+    columns = [
+        "id",
+        "name",
+        "courseGroupEmail",
+        "courseState",
+        "creationTime",
+        "description",
+        "descriptionHeading",
+        "enrollmentCode",
+        "guardiansEnabled",
+        "ownerId",
+        "room",
+        "section",
+        "teacherGroupEmail",
+        "updateTime",
+    ]
+    courses = courses[columns]
+    courses = courses.astype({"updateTime": "datetime64[ns]"})
     sql.insert_into("GoogleClassroom_Courses", courses, if_exists="replace")
     course_ids = courses.id.unique()
 
