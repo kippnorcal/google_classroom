@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timedelta
 import json
 import os
 import pickle
@@ -43,9 +43,7 @@ def get_credentials():
 def get_classroom_student_usage(sql, service):
     """Get paginated student usage data for Google Classroom and insert into database."""
     # Analytics has 2 day lag
-    two_days_ago = (datetime.datetime.today() - datetime.timedelta(days=2)).strftime(
-        "%Y-%m-%d"
-    )
+    two_days_ago = (datetime.today() - timedelta(days=2)).strftime("%Y-%m-%d")
     print(f"Getting student usage data for {two_days_ago}.")
     all_usage = []
     next_page_token = ""
@@ -75,7 +73,7 @@ def parse_classroom_usage(usage_data):
         row["Email"] = record.get("entity").get("userEmail")
         row["AsOfDate"] = record.get("date")
         row["LastUsedTime"] = parse_classroom_last_used(record.get("parameters"))
-        row["ImportDate"] = datetime.datetime.today()
+        row["ImportDate"] = datetime.today()
         records.append(row)
     df = pd.DataFrame(records)
     df = df.astype(
