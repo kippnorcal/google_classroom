@@ -1,15 +1,12 @@
-import datetime as dt
+import datetime
 import json
-
+import os
 import pickle
-import os.path
-from os import getenv
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
 import pandas as pd
-from pandas import json_normalize
 from sqlsorcery import MSSQL
 
 
@@ -45,12 +42,14 @@ def get_credentials():
 
 def get_classroom_student_usage(sql, service):
     """Get paginated student usage data for Google Classroom and insert into database."""
-    two_days_ago = dt.datetime.today() - dt.timedelta(days=2)  # Analytics has 2 day lag
-    two_days_ago = two_days_ago.strftime("%Y-%m-%d")
+    # Analytics has 2 day lag
+    two_days_ago = (datetime.datetime.today() - datetime.timedelta(days=2)).strftime(
+        "%Y-%m-%d"
+    )
     print(f"Getting student usage data for {two_days_ago}.")
     all_usage = []
     next_page_token = ""
-    org_unit_id = getenv("STUDENT_ORG_UNIT")
+    org_unit_id = os.getenv("STUDENT_ORG_UNIT")
     while next_page_token is not None:
         results = (
             service.userUsageReport()
@@ -76,8 +75,17 @@ def parse_classroom_usage(usage_data):
         row["Email"] = record.get("entity").get("userEmail")
         row["AsOfDate"] = record.get("date")
         row["LastUsedTime"] = parse_classroom_last_used(record.get("parameters"))
+        row["ImportDate"] = datetime.datetime.today()
         records.append(row)
-    return pd.DataFrame(records)
+    df = pd.DataFrame(records)
+    df = df.astype(
+        {
+            "AsOfDate": "datetime64[ns]",
+            "LastUsedTime": "datetime64[ns]",
+            "ImportDate": "datetime64[ns]",
+        }
+    )
+    return df
 
 
 def parse_classroom_last_used(parameters):
@@ -216,26 +224,26 @@ def main():
 
     # Get courses
     courses = get_courses(classroom_service)
-    courses = json_normalize(courses)
+    courses = pd.json_normalize(courses)
     courses = courses.astype(str)
     sql.insert_into("GoogleClassroom_Courses", courses, if_exists="replace")
     course_ids = courses.id.unique()
 
     # Get course topics
     course_topics = get_course_topics(classroom_service, course_ids)
-    course_topics = json_normalize(course_topics)
+    course_topics = pd.json_normalize(course_topics)
     course_topics = course_topics.astype(str)
     sql.insert_into("GoogleClassroom_CourseTopics", course_topics, if_exists="replace")
 
     # Get students and insert into database
     students = get_students(classroom_service, course_ids)
-    students = json_normalize(students)
+    students = pd.json_normalize(students)
     students = students.astype(str)
     sql.insert_into("GoogleClassroom_Students", students, if_exists="replace")
 
     # Get teachers and insert into database
     teachers = get_teachers(classroom_service, course_ids)
-    teachers = json_normalize(teachers)
+    teachers = pd.json_normalize(teachers)
     teachers = teachers.astype(str)
     sql.insert_into("GoogleClassroom_Teachers", teachers, if_exists="replace")
 
