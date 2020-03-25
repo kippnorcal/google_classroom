@@ -24,7 +24,16 @@ DB=
 DB_USER=
 DB_PWD=
 DB_SCHEMA=
+
+# Google API variables
+STUDENT_ORG_UNIT=alphanumeric string id for the org unit (retrieve through Admin API)
 ```
+
+3. Generate the `token.pickle` and `credentials.json` files.
+
+* Use Google authentication flow.
+* It can't be done through Docker.
+* Either need to run it in pipenv the first time, or copy the two files from an existing working project.
 
 ### Running the job
 
