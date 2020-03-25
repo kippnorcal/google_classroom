@@ -17,10 +17,10 @@ def get_credentials():
     SCOPES = [
         "https://www.googleapis.com/auth/admin.reports.usage.readonly",
         "https://www.googleapis.com/auth/classroom.guardianlinks.students",
-        "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly",
         "https://www.googleapis.com/auth/classroom.courses",
-        "https://www.googleapis.com/auth/classroom.topics",
         "https://www.googleapis.com/auth/classroom.rosters",
+        "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly",
+        "https://www.googleapis.com/auth/classroom.topics",
     ]
     creds = None
     # The file token.pickle stores the user's access and refresh tokens, and is
