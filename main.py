@@ -8,7 +8,6 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
 import pandas as pd
-from pandas import json_normalize
 from sqlalchemy.exc import ProgrammingError
 from sqlsorcery import MSSQL
 
@@ -113,7 +112,7 @@ def get_guardian_invites(sql, service):
             .execute()
         )
         guardian_invites = results.get("guardianInvitations", [])
-        df = json_normalize(guardian_invites)
+        df = pd.json_normalize(guardian_invites)
         df = df.astype({"creationTime": "datetime64[ns]"})
         next_page_token = results.get("nextPageToken", None)
         sql.insert_into("GoogleClassroom_GuardianInvites", df, if_exists="append")
