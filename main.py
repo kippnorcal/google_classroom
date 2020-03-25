@@ -13,7 +13,7 @@ from pandas import json_normalize
 from sqlsorcery import MSSQL
 
 
-def build_service():
+def get_credentials():
     # If modifying these scopes, delete the file token.pickle.
     SCOPES = [
         "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly",
@@ -40,9 +40,7 @@ def build_service():
         with open("token.pickle", "wb") as token:
             pickle.dump(creds, token)
 
-    classroom_service = build("classroom", "v1", credentials=creds)
-    admin_service = build("admin", "reports_v1", credentials=creds)
-    return classroom_service, admin_service
+    return creds
 
 
 def get_classroom_student_usage(sql, service):
@@ -207,7 +205,10 @@ def parse_coursework(coursework):
 
 
 def main():
-    classroom_service, admin_service = build_service()
+    creds = get_credentials()
+    classroom_service = build("classroom", "v1", credentials=creds)
+    admin_service = build("admin", "reports_v1", credentials=creds)
+
     sql = MSSQL()
 
     # Get usage
