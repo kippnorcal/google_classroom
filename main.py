@@ -1,3 +1,4 @@
+from contextlib import suppress
 from datetime import datetime, timedelta
 import json
 import os
@@ -7,17 +8,19 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
 import pandas as pd
+from sqlalchemy.exc import ProgrammingError
 from sqlsorcery import MSSQL
 
 
 def get_credentials():
     # If modifying these scopes, delete the file token.pickle.
     SCOPES = [
-        "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly",
-        "https://www.googleapis.com/auth/classroom.courses",
-        "https://www.googleapis.com/auth/classroom.topics",
-        "https://www.googleapis.com/auth/classroom.rosters",
         "https://www.googleapis.com/auth/admin.reports.usage.readonly",
+        "https://www.googleapis.com/auth/classroom.guardianlinks.students",
+        "https://www.googleapis.com/auth/classroom.courses",
+        "https://www.googleapis.com/auth/classroom.rosters",
+        "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly",
+        "https://www.googleapis.com/auth/classroom.topics",
     ]
     creds = None
     # The file token.pickle stores the user's access and refresh tokens, and is
@@ -61,7 +64,7 @@ def get_classroom_student_usage(sql, service):
         )
         usage_data = results.get("usageReports")
         df = parse_classroom_usage(usage_data)
-        sql.insert_into("GoogleClassroom_StudentUsage", df, if_exists="append")
+        sql.insert_into("GoogleClassroom_StudentUsage", df)
         next_page_token = results.get("nextPageToken")
 
 
@@ -91,6 +94,28 @@ def parse_classroom_last_used(parameters):
     for parameter in parameters:
         if parameter.get("name") == "classroom:last_interaction_time":
             return parameter.get("datetimeValue")
+
+
+def get_guardian_invites(sql, service):
+    """Get guardian invite statuses"""
+    with suppress(ProgrammingError):
+        sql.truncate("GoogleClassroom_GuardianInvites")
+    next_page_token = ""
+    while next_page_token is not None:
+        # Get data for all students
+        results = (
+            service.userProfiles()
+            .guardianInvitations()
+            .list(
+                studentId="-", states=["PENDING", "COMPLETE"], pageToken=next_page_token
+            )
+            .execute()
+        )
+        guardian_invites = results.get("guardianInvitations", [])
+        df = pd.json_normalize(guardian_invites)
+        df = df.astype({"creationTime": "datetime64[ns]"})
+        next_page_token = results.get("nextPageToken", None)
+        sql.insert_into("GoogleClassroom_GuardianInvites", df)
 
 
 def get_courses(service):
@@ -219,6 +244,9 @@ def main():
 
     # Get usage
     get_classroom_student_usage(sql, admin_service)
+
+    # Get guardian invites
+    get_guardian_invites(sql, classroom_service)
 
     # Get courses
     courses = get_courses(classroom_service)
