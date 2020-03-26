@@ -96,6 +96,24 @@ def parse_classroom_last_used(parameters):
             return parameter.get("datetimeValue")
 
 
+def get_guardians(sql, service):
+    """Get guardians (ie. accepted guardian invites)"""
+    with suppress(ProgrammingError):
+        sql.truncate("GoogleClassroom_Guardians")
+    next_page_token = ""
+    while next_page_token is not None:
+        results = (
+            service.userProfiles()
+            .guardians()
+            .list(studentId="-", pageToken=next_page_token)
+            .execute()
+        )
+        guardians = results.get("guardians", [])
+        df = pd.json_normalize(guardians)
+        next_page_token = results.get("nextPageToken", None)
+        sql.insert_into("GoogleClassroom_Guardians", df)
+
+
 def get_guardian_invites(sql, service):
     """Get guardian invite statuses"""
     with suppress(ProgrammingError):
@@ -244,6 +262,9 @@ def main():
 
     # Get usage
     get_classroom_student_usage(sql, admin_service)
+
+    # Get guardians
+    get_guardians(sql, classroom_service)
 
     # Get guardian invites
     get_guardian_invites(sql, classroom_service)
