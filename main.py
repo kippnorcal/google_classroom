@@ -64,7 +64,7 @@ def get_classroom_student_usage(sql, service):
         )
         usage_data = results.get("usageReports")
         df = parse_classroom_usage(usage_data)
-        sql.insert_into("GoogleClassroom_StudentUsage", df, if_exists="append")
+        sql.insert_into("GoogleClassroom_StudentUsage", df)
         next_page_token = results.get("nextPageToken")
 
 
@@ -115,7 +115,7 @@ def get_guardian_invites(sql, service):
         df = pd.json_normalize(guardian_invites)
         df = df.astype({"creationTime": "datetime64[ns]"})
         next_page_token = results.get("nextPageToken", None)
-        sql.insert_into("GoogleClassroom_GuardianInvites", df, if_exists="append")
+        sql.insert_into("GoogleClassroom_GuardianInvites", df)
 
 
 def get_courses(service):
