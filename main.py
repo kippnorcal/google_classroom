@@ -11,7 +11,15 @@ from google.auth.transport.requests import Request
 import pandas as pd
 from sqlsorcery import MSSQL
 
-from api import StudentUsage, Courses, Topics, Teachers, Students, CourseWork
+from api import (
+    StudentUsage,
+    Courses,
+    Topics,
+    Teachers,
+    Students,
+    CourseWork,
+    StudentSubmissions,
+)
 
 parser = argparse.ArgumentParser(description="Pick which ones")
 parser.add_argument("--usage", help="Import student usage data", action="store_true")
@@ -141,82 +149,6 @@ def get_teachers(service, course_ids):
     return all_teachers
 
 
-def get_student_submissions(service, course_ids):
-    """For the given courses, get the list of student coursework submissions."""
-    all_submissions = []
-    for course_id in course_ids:
-        print(f"getting student submissions for {course_id}")
-        results = (
-            service.courses()
-            .courseWork()
-            .studentSubmissions()
-            .list(courseId=course_id, courseWorkId="-")
-            .execute()
-        )
-        student_submissions = results.get("studentSubmissions", [])
-        all_submissions.extend(student_submissions)
-    return all_submissions
-
-
-def parse_statehistory(record, parsed):
-    """Flatten timestamp records fromnested state history"""
-    submission_history = record.get("submissionHistory")
-    if submission_history:
-        for submission in submission_history:
-            state_history = submission.get("stateHistory")
-            if state_history:
-                state = state_history.get("state")
-                if state == "CREATED":
-                    parsed["createdTime"] = state_history.get("stateTimestamp")
-                elif state == "TURNED_IN":
-                    parsed["turnedInTimestamp"] = state_history.get("stateTimestamp")
-                elif state == "RETURNED":
-                    parsed["returnedTimestamp"] = state_history.get("stateTimestamp")
-
-
-def parse_gradehistory(record, parsed):
-    """Flatten needed records from nested grade history"""
-    submission_history = record.get("submissionHistory")
-    if submission_history:
-        for submission in submission_history:
-            grade_history = submission.get("gradeHistory")
-            if grade_history:
-                grade_change_type = grade_history.get("gradeChangeType")
-                if grade_change_type == "DRAFT_GRADE_POINTS_EARNED_CHANGE":
-                    parsed["draftMaxPoints"] = grade_history.get("maxPoints")
-                    parsed["draftGradeTimestamp"] = grade_history.get("gradeTimestamp")
-                    parsed["draftGraderId"] = grade_history.get("actorUserId")
-                elif grade_change_type == "ASSIGNED_GRADE_POINTS_EARNED_CHANGE":
-                    parsed["assignedMaxPoints"] = grade_history.get("maxPoints")
-                    parsed["assignedGradeTimestamp"] = grade_history.get(
-                        "gradeTimestamp"
-                    )
-                    parsed["assignedGraderId"] = grade_history.get("actorUserId")
-
-
-def parse_coursework(coursework):
-    """Parse the coursework nested json into flat records for insertion
-    in to database table"""
-    records = []
-    for record in coursework:
-        parsed = {
-            "courseId": record.get("courseId"),
-            "courseWorkId": record.get("courseWorkId"),
-            "id": record.get("id"),
-            "userId": record.get("userId"),
-            "creationTime": record.get("creationTime"),
-            "updateTime": record.get("updateTime"),
-            "state": record.get("state"),
-            "draftGrade": record.get("draftGrade"),
-            "assignedGrade": record.get("assignedGrade"),
-            "courseWorkType": record.get("courseWorkType"),
-        }
-        parse_statehistory(record, parsed)
-        parse_gradehistory(record, parsed)
-        records.append(parsed)
-    return records
-
-
 def main():
     creds = get_credentials()
     classroom_service = build("classroom", "v1", credentials=creds)
@@ -275,11 +207,13 @@ def main():
 
     # Get student coursework submissions
     if args.submissions:
-        student_submissions = get_student_submissions(classroom_service, course_ids)
-        student_submissions = parse_coursework(student_submissions)
-        student_submissions = pd.DataFrame(student_submissions)
+        student_submissions = StudentSubmissions(classroom_service)
+        student_submissions.get_by_course(course_ids)
+        student_submissions_df = student_submissions.to_df()
         sql.insert_into(
-            "GoogleClassroom_Coursework", student_submissions, if_exists="replace"
+            "GoogleClassroom_CourseworkSubmissions",
+            student_submissions_df,
+            if_exists="replace",
         )
 
 

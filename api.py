@@ -243,3 +243,122 @@ class CourseWork(EndPoint):
             .courseWork()
             .list(pageToken=self.next_page_token, courseId=self.course_id)
         )
+
+
+class StudentSubmissions(EndPoint):
+    def __init__(self, service):
+        super().__init__(service)
+        self.date_columns = ["creationTime", "updateTime"]
+        self.columns = [
+            "courseId",
+            "courseWorkId",
+            "id",
+            "userId",
+            "creationTime",
+            "updateTime",
+            "state",
+            "draftGrade",
+            "assignedGrade",
+            "courseWorkType",
+            "createdTime",
+            "turnedInTimestamp",
+            "returnedTimestamp",
+            "draftMaxPoints",
+            "draftGradeTimestamp",
+            "draftGraderId",
+            "assignedMaxPoints",
+            "assignedGradeTimestamp",
+            "assignedGraderId",
+        ]
+
+    def request(self):
+        return (
+            self.service.courses()
+            .courseWork()
+            .studentSubmissions()
+            .list(courseId=self.course_id, courseWorkId="-")
+        )
+
+    @retry(
+        stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
+    )
+    def get(self, course_id=None, position=None):
+        self.next_page_token = ""
+        self.count = 0
+        while self.next_page_token is not None:
+            results = self.request().execute()
+            records = results.get(self.request_key, [])
+            records = self._parse_coursework(records)
+            self.count += len(records)
+            self.next_page_token = results.get("nextPageToken", None)
+            if len(records) > 0:
+                if course_id:
+                    logging.debug(
+                        f"Getting {self.count} {self.classname()} for course {course_id} | {position[0]}/{position[1]}"
+                    )
+                else:
+                    logging.debug(f"Getting {self.count} {self.classname()}")
+
+                self.to_json(records)
+
+    def _parse_statehistory(self, record, parsed):
+        """Flatten timestamp records from nested state history"""
+        submission_history = record.get("submissionHistory")
+        if submission_history:
+            for submission in submission_history:
+                state_history = submission.get("stateHistory")
+                if state_history:
+                    state = state_history.get("state")
+                    if state == "CREATED":
+                        parsed["createdTime"] = state_history.get("stateTimestamp")
+                    elif state == "TURNED_IN":
+                        parsed["turnedInTimestamp"] = state_history.get(
+                            "stateTimestamp"
+                        )
+                    elif state == "RETURNED":
+                        parsed["returnedTimestamp"] = state_history.get(
+                            "stateTimestamp"
+                        )
+
+    def _parse_gradehistory(self, record, parsed):
+        """Flatten needed records from nested grade history"""
+        submission_history = record.get("submissionHistory")
+        if submission_history:
+            for submission in submission_history:
+                grade_history = submission.get("gradeHistory")
+                if grade_history:
+                    grade_change_type = grade_history.get("gradeChangeType")
+                    if grade_change_type == "DRAFT_GRADE_POINTS_EARNED_CHANGE":
+                        parsed["draftMaxPoints"] = grade_history.get("maxPoints")
+                        parsed["draftGradeTimestamp"] = grade_history.get(
+                            "gradeTimestamp"
+                        )
+                        parsed["draftGraderId"] = grade_history.get("actorUserId")
+                    elif grade_change_type == "ASSIGNED_GRADE_POINTS_EARNED_CHANGE":
+                        parsed["assignedMaxPoints"] = grade_history.get("maxPoints")
+                        parsed["assignedGradeTimestamp"] = grade_history.get(
+                            "gradeTimestamp"
+                        )
+                        parsed["assignedGraderId"] = grade_history.get("actorUserId")
+
+    def _parse_coursework(self, coursework):
+        """Parse the coursework nested json into flat records for insertion
+        in to database table"""
+        records = []
+        for record in coursework:
+            parsed = {
+                "courseId": record.get("courseId"),
+                "courseWorkId": record.get("courseWorkId"),
+                "id": record.get("id"),
+                "userId": record.get("userId"),
+                "creationTime": record.get("creationTime"),
+                "updateTime": record.get("updateTime"),
+                "state": record.get("state"),
+                "draftGrade": record.get("draftGrade"),
+                "assignedGrade": record.get("assignedGrade"),
+                "courseWorkType": record.get("courseWorkType"),
+            }
+            self._parse_statehistory(record, parsed)
+            self._parse_gradehistory(record, parsed)
+            records.append(parsed)
+        return records
