@@ -1,5 +1,4 @@
 import argparse
-from datetime import datetime, timedelta
 import logging
 import json
 import os
@@ -12,7 +11,7 @@ from google.auth.transport.requests import Request
 import pandas as pd
 from sqlsorcery import MSSQL
 
-from api import Courses, Topics, Teachers, Students, CourseWork
+from api import StudentUsage, Courses, Topics, Teachers, Students, CourseWork
 
 parser = argparse.ArgumentParser(description="Pick which ones")
 parser.add_argument("--usage", help="Import student usage data", action="store_true")
@@ -78,58 +77,6 @@ def get_credentials():
             pickle.dump(creds, token)
 
     return creds
-
-
-def get_classroom_student_usage(sql, service):
-    """Get paginated student usage data for Google Classroom and insert into database."""
-    # Analytics has 2 day lag
-    two_days_ago = (datetime.today() - timedelta(days=2)).strftime("%Y-%m-%d")
-    logging.info(f"Getting student usage data for {two_days_ago}.")
-    next_page_token = ""
-    org_unit_id = os.getenv("STUDENT_ORG_UNIT")
-    while next_page_token is not None:
-        results = (
-            service.userUsageReport()
-            .get(
-                userKey="all",
-                date=two_days_ago,
-                orgUnitID=f"id:{org_unit_id}",
-                pageToken=next_page_token,
-            )
-            .execute()
-        )
-        usage_data = results.get("usageReports")
-        df = parse_classroom_usage(usage_data)
-        sql.insert_into("GoogleClassroom_StudentUsage", df, if_exists="append")
-        next_page_token = results.get("nextPageToken")
-
-
-def parse_classroom_usage(usage_data):
-    """Parse classroom usage data into a dataframe with one row per user."""
-    records = []
-    for record in usage_data:
-        row = {}
-        row["Email"] = record.get("entity").get("userEmail")
-        row["AsOfDate"] = record.get("date")
-        row["LastUsedTime"] = parse_classroom_last_used(record.get("parameters"))
-        row["ImportDate"] = datetime.today()
-        records.append(row)
-    df = pd.DataFrame(records)
-    df = df.astype(
-        {
-            "AsOfDate": "datetime64[ns]",
-            "LastUsedTime": "datetime64[ns]",
-            "ImportDate": "datetime64[ns]",
-        }
-    )
-    return df
-
-
-def parse_classroom_last_used(parameters):
-    """Get classroom last interaction time from parameters list."""
-    for parameter in parameters:
-        if parameter.get("name") == "classroom:last_interaction_time":
-            return parameter.get("datetimeValue")
 
 
 def get_courses(service):
@@ -279,7 +226,10 @@ def main():
 
     # Get usage
     if args.usage:
-        get_classroom_student_usage(sql, admin_service)
+        student_usage = StudentUsage(admin_service)
+        student_usage.get()
+        student_usage_df = student_usage.to_df()
+        sql.insert_into("GoogleClassroom_StudentUsage", student_usage_df)
 
     # Get courses
     if args.courses:

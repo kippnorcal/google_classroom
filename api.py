@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import json
 import logging
 import os
@@ -77,6 +78,59 @@ class EndPoint:
         for idx, course_id in enumerate(course_ids):
             self.course_id = course_id
             self.get(course_id=course_id, position=(idx, course_count))
+
+
+class StudentUsage(EndPoint):
+    def __init__(self, service):
+        super().__init__(service)
+        self.date_columns = ["AsOfDate", "LastUsedTime"]
+        self.columns = ["Email", "AsOfDate", "LastUsedTime"]
+        self.two_days_ago = (datetime.today() - timedelta(days=2)).strftime("%Y-%m-%d")
+        self.org_unit_id = os.getenv("STUDENT_ORG_UNIT")
+
+    def request(self):
+        return self.service.userUsageReport().get(
+            userKey="all",
+            date=self.two_days_ago,
+            orgUnitID=f"id:{self.org_unit_id}",
+            pageToken=self.next_page_token,
+        )
+
+    @retry(
+        stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
+    )
+    def get(self, position=None):
+        self.next_page_token = ""
+        self.count = 0
+        while self.next_page_token is not None:
+            results = self.request().execute()
+            records = results.get("usageReports")
+            records = self._parse_classroom_usage(records)
+            self.count += len(records)
+            self.next_page_token = results.get("nextPageToken", None)
+            if len(records) > 0:
+                logging.debug(f"Getting {self.count} {self.classname()}")
+                self.to_json(records)
+
+    def _parse_classroom_usage(self, usage_data):
+        """Parse classroom usage data into a dataframe with one row per user."""
+        records = []
+        for record in usage_data:
+            row = {}
+            row["Email"] = record.get("entity").get("userEmail")
+            row["AsOfDate"] = record.get("date")
+            row["LastUsedTime"] = self._parse_classroom_last_used(
+                record.get("parameters")
+            )
+            row["ImportDate"] = datetime.today().strftime("%Y-%m-%d")
+            records.append(row)
+        return records
+
+    def _parse_classroom_last_used(self, parameters):
+        """Get classroom last interaction time from parameters list."""
+        for parameter in parameters:
+            if parameter.get("name") == "classroom:last_interaction_time":
+                return parameter.get("datetimeValue")
 
 
 class Courses(EndPoint):
