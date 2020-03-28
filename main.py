@@ -89,68 +89,6 @@ def get_credentials():
     return creds
 
 
-def get_courses(service):
-    """Get all paginated courses"""
-    next_page_token = ""
-    json_file = "data/courses.json"
-    while next_page_token is not None:
-        results = (
-            service.courses()
-            .list(pageToken=next_page_token, courseStates=["ACTIVE"])
-            .execute()
-        )
-        courses = results.get("courses", [])
-        next_page_token = results.get("nextPageToken", None)
-        write_json(courses, json_file)
-    return json_file
-
-
-def write_json(records, filename):
-    """Stream write API response data to json file"""
-    if os.path.exists(filename):
-        with open(filename, "r+") as f:
-            data = json.load(f)
-            data.extend(records)
-            f.seek(0)
-            json.dump(data, f)
-    else:
-        with open(filename, "w") as f:
-            json.dump(records, f)
-
-
-def get_course_topics(service, course_ids):
-    """Get all course topics"""
-    all_course_topics = []
-    for course_id in course_ids:
-        print(f"getting course topics for {course_id}")
-        results = service.courses().topics().list(courseId=course_id).execute()
-        topics = results.get("topic", [])
-        all_course_topics.extend(topics)
-    return all_course_topics
-
-
-def get_students(service, course_ids):
-    """For the given courses, get the list of students. Can take a while for a large number of courses."""
-    all_students = []
-    for course_id in course_ids:
-        print(f"getting students for {course_id}")
-        results = service.courses().students().list(courseId=course_id).execute()
-        students = results.get("students", [])
-        all_students.extend(students)
-    return all_students
-
-
-def get_teachers(service, course_ids):
-    """For the given courses, get the list of teachers. Can take a while for a large number of courses."""
-    all_teachers = []
-    for course_id in course_ids:
-        print(f"getting teachers for {course_id}")
-        results = service.courses().teachers().list(courseId=course_id).execute()
-        teachers = results.get("teachers", [])
-        all_teachers.extend(teachers)
-    return all_teachers
-
-
 def main():
     creds = get_credentials()
     classroom_service = build("classroom", "v1", credentials=creds)
