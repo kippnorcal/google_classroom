@@ -12,13 +12,14 @@ import pandas as pd
 from sqlsorcery import MSSQL
 
 from api import (
-    StudentUsage,
     Courses,
-    Topics,
-    Teachers,
-    Students,
     CourseWork,
+    Guardians,
+    Students,
     StudentSubmissions,
+    StudentUsage,
+    Teachers,
+    Topics,
 )
 
 parser = argparse.ArgumentParser(description="Pick which ones")
@@ -162,6 +163,13 @@ def main():
         student_usage.get()
         student_usage_df = student_usage.to_df()
         sql.insert_into("GoogleClassroom_StudentUsage", student_usage_df)
+
+    # Get guardians
+    if args.guardians:
+        guardians = Guardians(classroom_service)
+        guardians.get()
+        guardians_df = guardians.to_df()
+        sql.insert_into("GoogleClassroom_Guardians", guardians_df, if_exists="replace")
 
     # Get courses
     if args.courses:

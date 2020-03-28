@@ -133,6 +133,20 @@ class StudentUsage(EndPoint):
                 return parameter.get("datetimeValue")
 
 
+class Guardians(EndPoint):
+    def __init__(self, service):
+        super().__init__(service)
+        self.date_columns = []
+        self.columns = ["studentId", "guardianId", "invitedEmailAddress"]
+
+    def request(self):
+        return (
+            self.service.userProfiles()
+            .guardians()
+            .list(studentId="-", pageToken=self.next_page_token)
+        )
+
+
 class Courses(EndPoint):
     def __init__(self, service):
         super().__init__(service)
