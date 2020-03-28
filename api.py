@@ -54,6 +54,7 @@ class EndPoint:
     @retry(
         stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
     )
+    @elapsed
     def get(self, course_id=None, position=None):
         self.next_page_token = ""
         self.count = 0
@@ -71,6 +72,7 @@ class EndPoint:
                     logging.debug(f"Getting {self.count} {self.classname()}")
 
                 self.to_json(records)
+        logging.info(f"Retrieved {self.count} {self.classname()} records.")
 
     @elapsed
     def get_by_course(self, course_ids):
@@ -99,6 +101,7 @@ class StudentUsage(EndPoint):
     @retry(
         stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
     )
+    @elapsed
     def get(self, position=None):
         self.next_page_token = ""
         self.count = 0
@@ -111,6 +114,7 @@ class StudentUsage(EndPoint):
             if len(records) > 0:
                 logging.debug(f"Getting {self.count} {self.classname()}")
                 self.to_json(records)
+        logging.info(f"Retrieved {self.count} {self.classname()} records.")
 
     def _parse_classroom_usage(self, usage_data):
         """Parse classroom usage data into a dataframe with one row per user."""
@@ -321,6 +325,7 @@ class StudentSubmissions(EndPoint):
     @retry(
         stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
     )
+    @elapsed
     def get(self, course_id=None, position=None):
         self.next_page_token = ""
         self.count = 0
@@ -339,6 +344,7 @@ class StudentSubmissions(EndPoint):
                     logging.debug(f"Getting {self.count} {self.classname()}")
 
                 self.to_json(records)
+        logging.info(f"Retrieved {self.count} {self.classname()} records.")
 
     def _parse_statehistory(self, record, parsed):
         """Flatten timestamp records from nested state history"""
