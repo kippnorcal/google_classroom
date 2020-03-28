@@ -14,6 +14,7 @@ from sqlsorcery import MSSQL
 from api import (
     Courses,
     CourseWork,
+    GuardianInvites,
     Guardians,
     Students,
     StudentSubmissions,
@@ -170,6 +171,15 @@ def main():
         guardians.get()
         guardians_df = guardians.to_df()
         sql.insert_into("GoogleClassroom_Guardians", guardians_df, if_exists="replace")
+
+    # Get guardian invites
+    if args.invites:
+        guardian_invites = GuardianInvites(classroom_service)
+        guardian_invites.get()
+        guardian_invites_df = guardian_invites.to_df()
+        sql.insert_into(
+            "GoogleClassroom_GuardianInvites", guardian_invites_df, if_exists="replace"
+        )
 
     # Get courses
     if args.courses:

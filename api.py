@@ -147,6 +147,31 @@ class Guardians(EndPoint):
         )
 
 
+class GuardianInvites(EndPoint):
+    def __init__(self, service):
+        super().__init__(service)
+        self.date_columns = ["creationTime"]
+        self.columns = [
+            "studentId",
+            "invitationId",
+            "invitedEmailAddress",
+            "state",
+            "creationTime",
+        ]
+        self.request_key = "guardianInvitations"
+
+    def request(self):
+        return (
+            self.service.userProfiles()
+            .guardianInvitations()
+            .list(
+                studentId="-",
+                states=["PENDING", "COMPLETE"],
+                pageToken=self.next_page_token,
+            )
+        )
+
+
 class Courses(EndPoint):
     def __init__(self, service):
         super().__init__(service)
