@@ -104,6 +104,7 @@ def main():
         student_usage = StudentUsage(admin_service)
         student_usage.get()
         student_usage_df = student_usage.to_df()
+        logging.info(f"Inserting {len(student_usage_df)} Student Usage records.")
         sql.insert_into("GoogleClassroom_StudentUsage", student_usage_df)
 
     # Get guardians
@@ -111,6 +112,7 @@ def main():
         guardians = Guardians(classroom_service)
         guardians.get()
         guardians_df = guardians.to_df()
+        logging.info(f"Inserting {len(guardians_df)} Guardian records.")
         sql.insert_into("GoogleClassroom_Guardians", guardians_df, if_exists="replace")
 
     # Get guardian invites
@@ -118,6 +120,7 @@ def main():
         guardian_invites = GuardianInvites(classroom_service)
         guardian_invites.get()
         guardian_invites_df = guardian_invites.to_df()
+        logging.info(f"Inserting {len(guardian_invites_df)} Guardian Invite records.")
         sql.insert_into(
             "GoogleClassroom_GuardianInvites", guardian_invites_df, if_exists="replace"
         )
@@ -128,6 +131,7 @@ def main():
         courses.get()
         courses_df = courses.to_df()
         courses_df = courses_df[courses_df.updateTime >= "2019-07-01"]
+        logging.info(f"Inserting {len(courses_df)} Course records.")
         sql.insert_into("GoogleClassroom_Courses", courses_df, if_exists="replace")
 
     # Get list of course ids
@@ -139,6 +143,7 @@ def main():
         topics = Topics(classroom_service)
         topics.get_by_course(course_ids)
         topics_df = topics.to_df()
+        logging.info(f"Inserting {len(topics_df)} Course Topic records.")
         sql.insert_into("GoogleClassroom_Topics", topics_df, if_exists="replace")
 
     # Get CourseWork
@@ -146,6 +151,7 @@ def main():
         course_work = CourseWork(classroom_service)
         course_work.get_by_course(course_ids)
         course_work_df = course_work.to_df()
+        logging.info(f"Inserting {len(course_work_df)} Coursework records.")
         sql.insert_into(
             "GoogleClassroom_CourseWork", course_work_df, if_exists="replace"
         )
@@ -155,6 +161,7 @@ def main():
         students = Students(classroom_service)
         students.get_by_course(course_ids)
         students_df = students.to_df()
+        logging.info(f"Inserting {len(students_df)} Student records.")
         sql.insert_into("GoogleClassroom_Students", students_df, if_exists="replace")
 
     # Get teachers and insert into database
@@ -162,6 +169,7 @@ def main():
         teachers = Teachers(classroom_service)
         teachers.get_by_course(course_ids)
         teachers_df = teachers.to_df()
+        logging.info(f"Inserting {len(teachers_df)} Teacher records.")
         sql.insert_into("GoogleClassroom_Teachers", teachers_df, if_exists="replace")
 
     # Get student coursework submissions
@@ -169,6 +177,9 @@ def main():
         student_submissions = StudentSubmissions(classroom_service)
         student_submissions.get_by_course(course_ids)
         student_submissions_df = student_submissions.to_df()
+        logging.info(
+            f"Inserting {len(student_submissions_df)} Student Submission records."
+        )
         sql.insert_into(
             "GoogleClassroom_CourseworkSubmissions",
             student_submissions_df,
