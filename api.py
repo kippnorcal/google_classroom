@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import json
 import logging
 import os
@@ -53,6 +54,7 @@ class EndPoint:
     @retry(
         stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
     )
+    @elapsed
     def get(self, course_id=None, position=None):
         self.next_page_token = ""
         self.count = 0
@@ -70,6 +72,7 @@ class EndPoint:
                     logging.debug(f"Getting {self.count} {self.classname()}")
 
                 self.to_json(records)
+        logging.info(f"Retrieved {self.count} {self.classname()} records.")
 
     @elapsed
     def get_by_course(self, course_ids):
@@ -77,6 +80,100 @@ class EndPoint:
         for idx, course_id in enumerate(course_ids):
             self.course_id = course_id
             self.get(course_id=course_id, position=(idx, course_count))
+
+
+class StudentUsage(EndPoint):
+    def __init__(self, service):
+        super().__init__(service)
+        self.date_columns = ["AsOfDate", "LastUsedTime"]
+        self.columns = ["Email", "AsOfDate", "LastUsedTime"]
+        self.two_days_ago = (datetime.today() - timedelta(days=2)).strftime("%Y-%m-%d")
+        self.org_unit_id = os.getenv("STUDENT_ORG_UNIT")
+
+    def request(self):
+        return self.service.userUsageReport().get(
+            userKey="all",
+            date=self.two_days_ago,
+            orgUnitID=f"id:{self.org_unit_id}",
+            pageToken=self.next_page_token,
+        )
+
+    @retry(
+        stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
+    )
+    @elapsed
+    def get(self, position=None):
+        self.next_page_token = ""
+        self.count = 0
+        while self.next_page_token is not None:
+            results = self.request().execute()
+            records = results.get("usageReports")
+            records = self._parse_classroom_usage(records)
+            self.count += len(records)
+            self.next_page_token = results.get("nextPageToken", None)
+            if len(records) > 0:
+                logging.debug(f"Getting {self.count} {self.classname()}")
+                self.to_json(records)
+        logging.info(f"Retrieved {self.count} {self.classname()} records.")
+
+    def _parse_classroom_usage(self, usage_data):
+        """Parse classroom usage data into a dataframe with one row per user."""
+        records = []
+        for record in usage_data:
+            row = {}
+            row["Email"] = record.get("entity").get("userEmail")
+            row["AsOfDate"] = record.get("date")
+            row["LastUsedTime"] = self._parse_classroom_last_used(
+                record.get("parameters")
+            )
+            row["ImportDate"] = datetime.today().strftime("%Y-%m-%d")
+            records.append(row)
+        return records
+
+    def _parse_classroom_last_used(self, parameters):
+        """Get classroom last interaction time from parameters list."""
+        for parameter in parameters:
+            if parameter.get("name") == "classroom:last_interaction_time":
+                return parameter.get("datetimeValue")
+
+
+class Guardians(EndPoint):
+    def __init__(self, service):
+        super().__init__(service)
+        self.date_columns = []
+        self.columns = ["studentId", "guardianId", "invitedEmailAddress"]
+
+    def request(self):
+        return (
+            self.service.userProfiles()
+            .guardians()
+            .list(studentId="-", pageToken=self.next_page_token)
+        )
+
+
+class GuardianInvites(EndPoint):
+    def __init__(self, service):
+        super().__init__(service)
+        self.date_columns = ["creationTime"]
+        self.columns = [
+            "studentId",
+            "invitationId",
+            "invitedEmailAddress",
+            "state",
+            "creationTime",
+        ]
+        self.request_key = "guardianInvitations"
+
+    def request(self):
+        return (
+            self.service.userProfiles()
+            .guardianInvitations()
+            .list(
+                studentId="-",
+                states=["PENDING", "COMPLETE"],
+                pageToken=self.next_page_token,
+            )
+        )
 
 
 class Courses(EndPoint):
@@ -189,3 +286,124 @@ class CourseWork(EndPoint):
             .courseWork()
             .list(pageToken=self.next_page_token, courseId=self.course_id)
         )
+
+
+class StudentSubmissions(EndPoint):
+    def __init__(self, service):
+        super().__init__(service)
+        self.date_columns = ["creationTime", "updateTime"]
+        self.columns = [
+            "courseId",
+            "courseWorkId",
+            "id",
+            "userId",
+            "creationTime",
+            "updateTime",
+            "state",
+            "draftGrade",
+            "assignedGrade",
+            "courseWorkType",
+            "createdTime",
+            "turnedInTimestamp",
+            "returnedTimestamp",
+            "draftMaxPoints",
+            "draftGradeTimestamp",
+            "draftGraderId",
+            "assignedMaxPoints",
+            "assignedGradeTimestamp",
+            "assignedGraderId",
+        ]
+
+    def request(self):
+        return (
+            self.service.courses()
+            .courseWork()
+            .studentSubmissions()
+            .list(courseId=self.course_id, courseWorkId="-")
+        )
+
+    @retry(
+        stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
+    )
+    @elapsed
+    def get(self, course_id=None, position=None):
+        self.next_page_token = ""
+        self.count = 0
+        while self.next_page_token is not None:
+            results = self.request().execute()
+            records = results.get(self.request_key, [])
+            records = self._parse_coursework(records)
+            self.count += len(records)
+            self.next_page_token = results.get("nextPageToken", None)
+            if len(records) > 0:
+                if course_id:
+                    logging.debug(
+                        f"Getting {self.count} {self.classname()} for course {course_id} | {position[0]}/{position[1]}"
+                    )
+                else:
+                    logging.debug(f"Getting {self.count} {self.classname()}")
+
+                self.to_json(records)
+        logging.info(f"Retrieved {self.count} {self.classname()} records.")
+
+    def _parse_statehistory(self, record, parsed):
+        """Flatten timestamp records from nested state history"""
+        submission_history = record.get("submissionHistory")
+        if submission_history:
+            for submission in submission_history:
+                state_history = submission.get("stateHistory")
+                if state_history:
+                    state = state_history.get("state")
+                    if state == "CREATED":
+                        parsed["createdTime"] = state_history.get("stateTimestamp")
+                    elif state == "TURNED_IN":
+                        parsed["turnedInTimestamp"] = state_history.get(
+                            "stateTimestamp"
+                        )
+                    elif state == "RETURNED":
+                        parsed["returnedTimestamp"] = state_history.get(
+                            "stateTimestamp"
+                        )
+
+    def _parse_gradehistory(self, record, parsed):
+        """Flatten needed records from nested grade history"""
+        submission_history = record.get("submissionHistory")
+        if submission_history:
+            for submission in submission_history:
+                grade_history = submission.get("gradeHistory")
+                if grade_history:
+                    grade_change_type = grade_history.get("gradeChangeType")
+                    if grade_change_type == "DRAFT_GRADE_POINTS_EARNED_CHANGE":
+                        parsed["draftMaxPoints"] = grade_history.get("maxPoints")
+                        parsed["draftGradeTimestamp"] = grade_history.get(
+                            "gradeTimestamp"
+                        )
+                        parsed["draftGraderId"] = grade_history.get("actorUserId")
+                    elif grade_change_type == "ASSIGNED_GRADE_POINTS_EARNED_CHANGE":
+                        parsed["assignedMaxPoints"] = grade_history.get("maxPoints")
+                        parsed["assignedGradeTimestamp"] = grade_history.get(
+                            "gradeTimestamp"
+                        )
+                        parsed["assignedGraderId"] = grade_history.get("actorUserId")
+
+    def _parse_coursework(self, coursework):
+        """Parse the coursework nested json into flat records for insertion
+        in to database table"""
+        records = []
+        for record in coursework:
+            parsed = {
+                "courseId": record.get("courseId"),
+                "courseWorkId": record.get("courseWorkId"),
+                "id": record.get("id"),
+                "userId": record.get("userId"),
+                "creationTime": record.get("creationTime"),
+                "updateTime": record.get("updateTime"),
+                "state": record.get("state"),
+                "draftGrade": record.get("draftGrade"),
+                "assignedGrade": record.get("assignedGrade"),
+                "courseWorkType": record.get("courseWorkType"),
+            }
+            self._parse_statehistory(record, parsed)
+            self._parse_gradehistory(record, parsed)
+            records.append(parsed)
+        return records

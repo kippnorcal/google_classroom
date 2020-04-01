@@ -10,7 +10,7 @@ def _timer_message(func, elapsed):
         elapsed = round(elapsed / 60, 2)
         unit = "minutes"
 
-    return f"{func.__name__} completed in {elapsed} {unit}."
+    return f"{func.__qualname__} completed in {elapsed} {unit}."
 
 
 def elapsed(func):
