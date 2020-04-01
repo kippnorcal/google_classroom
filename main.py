@@ -1,23 +1,72 @@
+import argparse
 from contextlib import suppress
 from datetime import datetime, timedelta
 import json
+import logging
 import os
 import pickle
+import sys
+
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
-
 import pandas as pd
 from sqlalchemy.exc import ProgrammingError
 from sqlsorcery import MSSQL
 
+from api import (
+    Courses,
+    CourseWork,
+    GuardianInvites,
+    Guardians,
+    Students,
+    StudentSubmissions,
+    StudentUsage,
+    Teachers,
+    Topics,
+)
+
+parser = argparse.ArgumentParser(description="Pick which ones")
+parser.add_argument("--usage", help="Import student usage data", action="store_true")
+parser.add_argument("--courses", help="Import course lists", action="store_true")
+parser.add_argument("--topics", help="Import course topics", action="store_true")
+parser.add_argument(
+    "--coursework", help="Import course assignments", action="store_true"
+)
+parser.add_argument("--students", help="Import student rosters", action="store_true")
+parser.add_argument("--teachers", help="Import teacher rosters", action="store_true")
+parser.add_argument("--guardians", help="Import student guardians", action="store_true")
+parser.add_argument(
+    "--submissions", help="Import student coursework submissions", action="store_true"
+)
+parser.add_argument(
+    "--invites", help="Import guardian invite statuses", action="store_true"
+)
+args = parser.parse_args()
+
+logging.basicConfig(
+    handlers=[
+        logging.FileHandler(filename="data/app.log", mode="w+"),
+        logging.StreamHandler(sys.stdout),
+    ],
+    level=logging.DEBUG,
+    format="%(asctime)s | %(levelname)s: %(message)s",
+    datefmt="%Y-%m-%d %I:%M:%S%p %Z",
+)
+logging.getLogger("google_auth_oauthlib").setLevel(logging.ERROR)
+logging.getLogger("googleapiclient").setLevel(logging.ERROR)
+logging.getLogger("google").setLevel(logging.ERROR)
+
 
 def get_credentials():
+    """Retrieve Google auth credentials needed to build service"""
     # If modifying these scopes, delete the file token.pickle.
     SCOPES = [
         "https://www.googleapis.com/auth/admin.reports.usage.readonly",
-        "https://www.googleapis.com/auth/classroom.guardianlinks.students",
         "https://www.googleapis.com/auth/classroom.courses",
+        "https://www.googleapis.com/auth/classroom.coursework.students",
+        "https://www.googleapis.com/auth/classroom.guardianlinks.students",
+        "https://www.googleapis.com/auth/classroom.profile.emails",
         "https://www.googleapis.com/auth/classroom.rosters",
         "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly",
         "https://www.googleapis.com/auth/classroom.topics",
@@ -43,216 +92,6 @@ def get_credentials():
     return creds
 
 
-def get_classroom_student_usage(sql, service):
-    """Get paginated student usage data for Google Classroom and insert into database."""
-    # Analytics has 2 day lag
-    two_days_ago = (datetime.today() - timedelta(days=2)).strftime("%Y-%m-%d")
-    print(f"Getting student usage data for {two_days_ago}.")
-    all_usage = []
-    next_page_token = ""
-    org_unit_id = os.getenv("STUDENT_ORG_UNIT")
-    while next_page_token is not None:
-        results = (
-            service.userUsageReport()
-            .get(
-                userKey="all",
-                date=two_days_ago,
-                orgUnitID=f"id:{org_unit_id}",
-                pageToken=next_page_token,
-            )
-            .execute()
-        )
-        usage_data = results.get("usageReports")
-        df = parse_classroom_usage(usage_data)
-        sql.insert_into("GoogleClassroom_StudentUsage", df)
-        next_page_token = results.get("nextPageToken")
-
-
-def parse_classroom_usage(usage_data):
-    """Parse classroom usage data into a dataframe with one row per user."""
-    records = []
-    for record in usage_data:
-        row = {}
-        row["Email"] = record.get("entity").get("userEmail")
-        row["AsOfDate"] = record.get("date")
-        row["LastUsedTime"] = parse_classroom_last_used(record.get("parameters"))
-        row["ImportDate"] = datetime.today()
-        records.append(row)
-    df = pd.DataFrame(records)
-    df = df.astype(
-        {
-            "AsOfDate": "datetime64[ns]",
-            "LastUsedTime": "datetime64[ns]",
-            "ImportDate": "datetime64[ns]",
-        }
-    )
-    return df
-
-
-def parse_classroom_last_used(parameters):
-    """Get classroom last interaction time from parameters list."""
-    for parameter in parameters:
-        if parameter.get("name") == "classroom:last_interaction_time":
-            return parameter.get("datetimeValue")
-
-
-def get_guardians(sql, service):
-    """Get guardians (ie. accepted guardian invites)"""
-    with suppress(ProgrammingError):
-        sql.truncate("GoogleClassroom_Guardians")
-    next_page_token = ""
-    while next_page_token is not None:
-        results = (
-            service.userProfiles()
-            .guardians()
-            .list(studentId="-", pageToken=next_page_token)
-            .execute()
-        )
-        guardians = results.get("guardians", [])
-        df = pd.json_normalize(guardians)
-        next_page_token = results.get("nextPageToken", None)
-        sql.insert_into("GoogleClassroom_Guardians", df)
-
-
-def get_guardian_invites(sql, service):
-    """Get guardian invite statuses"""
-    with suppress(ProgrammingError):
-        sql.truncate("GoogleClassroom_GuardianInvites")
-    next_page_token = ""
-    while next_page_token is not None:
-        # Get data for all students
-        results = (
-            service.userProfiles()
-            .guardianInvitations()
-            .list(
-                studentId="-", states=["PENDING", "COMPLETE"], pageToken=next_page_token
-            )
-            .execute()
-        )
-        guardian_invites = results.get("guardianInvitations", [])
-        df = pd.json_normalize(guardian_invites)
-        df = df.astype({"creationTime": "datetime64[ns]"})
-        next_page_token = results.get("nextPageToken", None)
-        sql.insert_into("GoogleClassroom_GuardianInvites", df)
-
-
-def get_courses(service):
-    """Get all paginated courses"""
-    all_courses = []
-    next_page_token = ""
-    while next_page_token is not None:
-        results = service.courses().list(pageToken=next_page_token).execute()
-        courses = results.get("courses", [])
-        next_page_token = results.get("nextPageToken", None)
-        all_courses.extend(courses)
-    return all_courses
-
-
-def get_course_topics(service, course_ids):
-    """Get all course topics"""
-    all_course_topics = []
-    for course_id in course_ids:
-        print(f"getting course topics for {course_id}")
-        results = service.courses().topics().list(courseId=course_id).execute()
-        topics = results.get("topic", [])
-        all_course_topics.extend(topics)
-    return all_course_topics
-
-
-def get_students(service, course_ids):
-    """For the given courses, get the list of students. Can take a while for a large number of courses."""
-    all_students = []
-    for course_id in course_ids:
-        print(f"getting students for {course_id}")
-        results = service.courses().students().list(courseId=course_id).execute()
-        students = results.get("students", [])
-        all_students.extend(students)
-    return all_students
-
-
-def get_teachers(service, course_ids):
-    """For the given courses, get the list of teachers. Can take a while for a large number of courses."""
-    all_teachers = []
-    for course_id in course_ids:
-        print(f"getting teachers for {course_id}")
-        results = service.courses().teachers().list(courseId=course_id).execute()
-        teachers = results.get("teachers", [])
-        all_teachers.extend(teachers)
-    return all_teachers
-
-
-def get_student_submissions(service, course_ids):
-    """For the given courses, get the list of student coursework submissions."""
-    all_submissions = []
-    for course_id in course_ids:
-        print(f"getting student submissions for {course_id}")
-        results = (
-            service.courses()
-            .courseWork()
-            .studentSubmissions()
-            .list(courseId=course_id, courseWorkId="-")
-            .execute()
-        )
-        student_submissions = results.get("studentSubmissions", [])
-        all_submissions.extend(student_submissions)
-    return all_submissions
-
-
-def parse_statehistory(record, parsed):
-    submission_history = record.get("submissionHistory")
-    if submission_history:
-        for submission in submission_history:
-            state_history = submission.get("stateHistory")
-            if state_history:
-                state = state_history.get("state")
-                if state == "CREATED":
-                    parsed["createdTime"] = state_history.get("stateTimestamp")
-                elif state == "TURNED_IN":
-                    parsed["turnedInTimestamp"] = state_history.get("stateTimestamp")
-                elif state == "RETURNED":
-                    parsed["returnedTimestamp"] = state_history.get("stateTimestamp")
-
-
-def parse_gradehistory(record, parsed):
-    submission_history = record.get("submissionHistory")
-    if submission_history:
-        for submission in submission_history:
-            grade_history = submission.get("gradeHistory")
-            if grade_history:
-                grade_change_type = grade_history.get("gradeChangeType")
-                if grade_change_type == "DRAFT_GRADE_POINTS_EARNED_CHANGE":
-                    parsed["draftMaxPoints"] = grade_history.get("maxPoints")
-                    parsed["draftGradeTimestamp"] = grade_history.get("gradeTimestamp")
-                    parsed["draftGraderId"] = grade_history.get("actorUserId")
-                elif grade_change_type == "ASSIGNED_GRADE_POINTS_EARNED_CHANGE":
-                    parsed["assignedMaxPoints"] = grade_history.get("maxPoints")
-                    parsed["assignedGradeTimestamp"] = grade_history.get(
-                        "gradeTimestamp"
-                    )
-                    parsed["assignedGraderId"] = grade_history.get("actorUserId")
-
-
-def parse_coursework(coursework):
-    records = []
-    for record in coursework:
-        parsed = {
-            "courseId": record.get("courseId"),
-            "courseWorkId": record.get("courseWorkId"),
-            "id": record.get("id"),
-            "userId": record.get("userId"),
-            "creationTime": record.get("creationTime"),
-            "updateTime": record.get("updateTime"),
-            "state": record.get("state"),
-            "draftGrade": record.get("draftGrade"),
-            "assignedGrade": record.get("assignedGrade"),
-            "courseWorkType": record.get("courseWorkType"),
-        }
-        parse_statehistory(record, parsed)
-        parse_gradehistory(record, parsed)
-        records.append(parsed)
-    return records
-
-
 def main():
     creds = get_credentials()
     classroom_service = build("classroom", "v1", credentials=creds)
@@ -261,46 +100,91 @@ def main():
     sql = MSSQL()
 
     # Get usage
-    get_classroom_student_usage(sql, admin_service)
+    if args.usage:
+        student_usage = StudentUsage(admin_service)
+        student_usage.get()
+        student_usage_df = student_usage.to_df()
+        logging.info(f"Inserting {len(student_usage_df)} Student Usage records.")
+        sql.insert_into("GoogleClassroom_StudentUsage", student_usage_df)
 
     # Get guardians
-    get_guardians(sql, classroom_service)
+    if args.guardians:
+        guardians = Guardians(classroom_service)
+        guardians.get()
+        guardians_df = guardians.to_df()
+        logging.info(f"Inserting {len(guardians_df)} Guardian records.")
+        sql.insert_into("GoogleClassroom_Guardians", guardians_df, if_exists="replace")
 
     # Get guardian invites
-    get_guardian_invites(sql, classroom_service)
+    if args.invites:
+        guardian_invites = GuardianInvites(classroom_service)
+        guardian_invites.get()
+        guardian_invites_df = guardian_invites.to_df()
+        logging.info(f"Inserting {len(guardian_invites_df)} Guardian Invite records.")
+        sql.insert_into(
+            "GoogleClassroom_GuardianInvites", guardian_invites_df, if_exists="replace"
+        )
 
     # Get courses
-    courses = get_courses(classroom_service)
-    courses = pd.json_normalize(courses)
-    courses = courses.astype(str)
-    sql.insert_into("GoogleClassroom_Courses", courses, if_exists="replace")
-    course_ids = courses.id.unique()
+    if args.courses:
+        courses = Courses(classroom_service)
+        courses.get()
+        courses_df = courses.to_df()
+        courses_df = courses_df[courses_df.updateTime >= os.getenv("SCHOOL_YEAR_START")]
+        logging.info(f"Inserting {len(courses_df)} Course records.")
+        sql.insert_into("GoogleClassroom_Courses", courses_df, if_exists="replace")
+
+    # Get list of course ids
+    course_ids = sql.query("SELECT id FROM custom.GoogleClassroom_Courses")
+    course_ids = course_ids.id.unique()
 
     # Get course topics
-    course_topics = get_course_topics(classroom_service, course_ids)
-    course_topics = pd.json_normalize(course_topics)
-    course_topics = course_topics.astype(str)
-    sql.insert_into("GoogleClassroom_CourseTopics", course_topics, if_exists="replace")
+    if args.topics:
+        topics = Topics(classroom_service)
+        topics.get_by_course(course_ids)
+        topics_df = topics.to_df()
+        logging.info(f"Inserting {len(topics_df)} Course Topic records.")
+        sql.insert_into("GoogleClassroom_Topics", topics_df, if_exists="replace")
+
+    # Get CourseWork
+    if args.coursework:
+        course_work = CourseWork(classroom_service)
+        course_work.get_by_course(course_ids)
+        course_work_df = course_work.to_df()
+        logging.info(f"Inserting {len(course_work_df)} Coursework records.")
+        sql.insert_into(
+            "GoogleClassroom_CourseWork", course_work_df, if_exists="replace"
+        )
 
     # Get students and insert into database
-    students = get_students(classroom_service, course_ids)
-    students = pd.json_normalize(students)
-    students = students.astype(str)
-    sql.insert_into("GoogleClassroom_Students", students, if_exists="replace")
+    if args.students:
+        students = Students(classroom_service)
+        students.get_by_course(course_ids)
+        students_df = students.to_df()
+        logging.info(f"Inserting {len(students_df)} Student records.")
+        sql.insert_into("GoogleClassroom_Students", students_df, if_exists="replace")
 
     # Get teachers and insert into database
-    teachers = get_teachers(classroom_service, course_ids)
-    teachers = pd.json_normalize(teachers)
-    teachers = teachers.astype(str)
-    sql.insert_into("GoogleClassroom_Teachers", teachers, if_exists="replace")
+    if args.teachers:
+        teachers = Teachers(classroom_service)
+        teachers.get_by_course(course_ids)
+        teachers_df = teachers.to_df()
+        logging.info(f"Inserting {len(teachers_df)} Teacher records.")
+        sql.insert_into("GoogleClassroom_Teachers", teachers_df, if_exists="replace")
 
     # Get student coursework submissions
-    student_submissions = get_student_submissions(classroom_service, course_ids)
-    student_submissions = parse_coursework(student_submissions)
-    student_submissions = pd.DataFrame(student_submissions)
-    sql.insert_into(
-        "GoogleClassroom_Coursework", student_submissions, if_exists="replace"
-    )
+    if args.submissions:
+        student_submissions = StudentSubmissions(classroom_service)
+        student_submissions.get_by_course(course_ids)
+        student_submissions_df = student_submissions.to_df()
+        logging.info(
+            f"Inserting {len(student_submissions_df)} Student Submission records."
+        )
+        sql.insert_into(
+            "GoogleClassroom_CourseworkSubmissions",
+            student_submissions_df,
+            if_exists="replace",
+        )
 
 
 if __name__ == "__main__":

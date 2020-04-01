@@ -27,6 +27,9 @@ DB_SCHEMA=
 
 # Google API variables
 STUDENT_ORG_UNIT=alphanumeric string id for the org unit (retrieve through Admin API)
+
+# Yearly settings
+SCHOOL_YEAR_START=YYYY-MM-DD
 ```
 
 3. Generate the `token.pickle` and `credentials.json` files.
@@ -55,3 +58,7 @@ Run the job using a database on localhost
 ```
 docker run --rm -it --network host google_classroom
 ```
+
+### Yearly maintenance
+
+1. Confirm the org unit ID (used to get Student Usage) in the .env.
