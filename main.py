@@ -12,7 +12,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 import pandas as pd
 from sqlalchemy.exc import ProgrammingError
-from sqlsorcery import MSSQL
+from sqlsorcery import MSSQL, PostgreSQL
 
 from api import (
     Courses,
@@ -84,7 +84,7 @@ def get_credentials():
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
-            creds = flow.run_local_server(port=0)
+            creds = flow.run_local_server(port=8080)
         # Save the credentials for the next run
         with open("token.pickle", "wb") as token:
             pickle.dump(creds, token)
@@ -97,7 +97,7 @@ def main():
     classroom_service = build("classroom", "v1", credentials=creds)
     admin_service = build("admin", "reports_v1", credentials=creds)
 
-    sql = MSSQL()
+    sql = PostgreSQL()
 
     # Get usage
     if args.usage:
@@ -105,7 +105,8 @@ def main():
         student_usage.get()
         student_usage_df = student_usage.to_df()
         logging.info(f"Inserting {len(student_usage_df)} Student Usage records.")
-        sql.insert_into("GoogleClassroom_StudentUsage", student_usage_df)
+        if not student_usage_df.empty:
+            sql.insert_into("GoogleClassroom_StudentUsage", student_usage_df)
 
     # Get guardians
     if args.guardians:
@@ -113,7 +114,8 @@ def main():
         guardians.get()
         guardians_df = guardians.to_df()
         logging.info(f"Inserting {len(guardians_df)} Guardian records.")
-        sql.insert_into("GoogleClassroom_Guardians", guardians_df, if_exists="replace")
+        if not guardians_df.empty:
+            sql.insert_into("GoogleClassroom_Guardians", guardians_df, if_exists="replace")
 
     # Get guardian invites
     if args.invites:
@@ -121,9 +123,10 @@ def main():
         guardian_invites.get()
         guardian_invites_df = guardian_invites.to_df()
         logging.info(f"Inserting {len(guardian_invites_df)} Guardian Invite records.")
-        sql.insert_into(
-            "GoogleClassroom_GuardianInvites", guardian_invites_df, if_exists="replace"
-        )
+        if not guardian_invites_df.empty:
+            sql.insert_into(
+                "GoogleClassroom_GuardianInvites", guardian_invites_df, if_exists="replace"
+            )
 
     # Get courses
     if args.courses:
@@ -132,10 +135,12 @@ def main():
         courses_df = courses.to_df()
         courses_df = courses_df[courses_df.updateTime >= os.getenv("SCHOOL_YEAR_START")]
         logging.info(f"Inserting {len(courses_df)} Course records.")
-        sql.insert_into("GoogleClassroom_Courses", courses_df, if_exists="replace")
+        if not courses_df.empty:
+            sql.insert_into("GoogleClassroom_Courses", courses_df, if_exists="replace")
 
     # Get list of course ids
-    course_ids = sql.query("SELECT id FROM custom.GoogleClassroom_Courses")
+    # TODO: If courses has never been selected, this table doesn't exist.
+    course_ids = sql.query("SELECT id FROM \"GoogleClassroom_Courses\"")
     course_ids = course_ids.id.unique()
 
     # Get course topics
@@ -144,7 +149,8 @@ def main():
         topics.get_by_course(course_ids)
         topics_df = topics.to_df()
         logging.info(f"Inserting {len(topics_df)} Course Topic records.")
-        sql.insert_into("GoogleClassroom_Topics", topics_df, if_exists="replace")
+        if not topics_df.empty:
+            sql.insert_into("GoogleClassroom_Topics", topics_df, if_exists="replace")
 
     # Get CourseWork
     if args.coursework:
@@ -152,9 +158,10 @@ def main():
         course_work.get_by_course(course_ids)
         course_work_df = course_work.to_df()
         logging.info(f"Inserting {len(course_work_df)} Coursework records.")
-        sql.insert_into(
-            "GoogleClassroom_CourseWork", course_work_df, if_exists="replace"
-        )
+        if not course_work_df.empty:
+            sql.insert_into(
+                "GoogleClassroom_CourseWork", course_work_df, if_exists="replace"
+            )
 
     # Get students and insert into database
     if args.students:
@@ -162,7 +169,8 @@ def main():
         students.get_by_course(course_ids)
         students_df = students.to_df()
         logging.info(f"Inserting {len(students_df)} Student records.")
-        sql.insert_into("GoogleClassroom_Students", students_df, if_exists="replace")
+        if not students_df.empty:
+            sql.insert_into("GoogleClassroom_Students", students_df, if_exists="replace")
 
     # Get teachers and insert into database
     if args.teachers:
@@ -170,7 +178,8 @@ def main():
         teachers.get_by_course(course_ids)
         teachers_df = teachers.to_df()
         logging.info(f"Inserting {len(teachers_df)} Teacher records.")
-        sql.insert_into("GoogleClassroom_Teachers", teachers_df, if_exists="replace")
+        if not teachers_df.empty:
+            sql.insert_into("GoogleClassroom_Teachers", teachers_df, if_exists="replace")
 
     # Get student coursework submissions
     if args.submissions:
@@ -180,11 +189,12 @@ def main():
         logging.info(
             f"Inserting {len(student_submissions_df)} Student Submission records."
         )
-        sql.insert_into(
-            "GoogleClassroom_CourseworkSubmissions",
-            student_submissions_df,
-            if_exists="replace",
-        )
+        if not student_submissions_df.empty:
+            sql.insert_into(
+                "GoogleClassroom_CourseworkSubmissions",
+                student_submissions_df,
+                if_exists="replace",
+            )
 
 
 if __name__ == "__main__":

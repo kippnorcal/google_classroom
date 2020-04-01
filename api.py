@@ -45,14 +45,19 @@ class EndPoint:
 
     def to_df(self):
         """Convert the json file for this endpoint to a dataframe and trim for data warehouse insertion."""
-        with open(self.filename) as f:
-            data = json.load(f)
-        df = pd.json_normalize(data)
-        df = df[self.columns]
-        if self.date_columns:
-            date_types = {col: "datetime64[ns]" for col in self.date_columns}
-            df = df.astype(date_types)
-        return df
+        try:
+            with open(self.filename) as f:
+                data = json.load(f)
+            df = pd.json_normalize(data)
+            df = df.reindex(columns=self.columns)
+            if self.date_columns:
+                date_types = {col: "datetime64[ns]" for col in self.date_columns}
+                df = df.astype(date_types)
+            return df
+        except FileNotFoundError:
+            logging.warning(
+                f"Unable to open {self.filename} for read access, as it does not exist.")
+            return pd.DataFrame()
 
     @retry(
         stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
@@ -95,12 +100,15 @@ class StudentUsage(EndPoint):
 
     def request(self):
         """Request all usage for the given org unit."""
-        return self.service.userUsageReport().get(
-            userKey="all",
-            date=self.two_days_ago,
-            orgUnitID=f"id:{self.org_unit_id}",  # This is the CleverStudents org unit ID
-            pageToken=self.next_page_token,
-        )
+        options = {
+            "userKey": "all",
+            "date": self.two_days_ago,
+            "pageToken": self.next_page_token,
+        }
+        if self.org_unit_id:
+            options["orgUnitId"] = self.org_unit_id  # This is the CleverStudents org unit ID
+
+        return self.service.userUsageReport().get(**options)
 
     @retry(
         stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
