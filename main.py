@@ -130,7 +130,7 @@ def main():
         courses = Courses(classroom_service)
         courses.get()
         courses_df = courses.to_df()
-        courses_df = courses_df[courses_df.updateTime >= "2019-07-01"]
+        courses_df = courses_df[courses_df.updateTime >= os.getenv("SCHOOL_YEAR_START")]
         logging.info(f"Inserting {len(courses_df)} Course records.")
         sql.insert_into("GoogleClassroom_Courses", courses_df, if_exists="replace")
 
