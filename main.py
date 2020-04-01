@@ -122,12 +122,6 @@ def main():
             "GoogleClassroom_GuardianInvites", guardian_invites_df, if_exists="replace"
         )
 
-    # Get guardians
-    get_guardians(sql, classroom_service)
-
-    # Get guardian invites
-    get_guardian_invites(sql, classroom_service)
-
     # Get courses
     if args.courses:
         courses = Courses(classroom_service)
