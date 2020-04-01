@@ -57,7 +57,6 @@ class EndPoint:
     @retry(
         stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
     )
-    @elapsed
     def get(self, course_id=None, position=None):
         """Execute API request and write results to json file."""
         self.next_page_token = ""
@@ -76,7 +75,6 @@ class EndPoint:
                     logging.debug(f"Getting {self.count} {self.classname()}")
 
                 self.to_json(records)
-        logging.info(f"Retrieved {self.count} {self.classname()} records.")
 
     @elapsed
     def get_by_course(self, course_ids):
@@ -121,7 +119,6 @@ class StudentUsage(EndPoint):
             if len(records) > 0:
                 logging.debug(f"Getting {self.count} {self.classname()}")
                 self.to_json(records)
-        logging.info(f"Retrieved {self.count} {self.classname()} records.")
 
     def _parse_classroom_usage(self, usage_data):
         """Parse classroom usage data into a dataframe with one row per user."""
@@ -340,7 +337,6 @@ class StudentSubmissions(EndPoint):
     @retry(
         stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
     )
-    @elapsed
     def get(self, course_id=None, position=None):
         """Get student submissions and parse coursework from within the submission."""
         self.next_page_token = ""
@@ -360,7 +356,6 @@ class StudentSubmissions(EndPoint):
                     logging.debug(f"Getting {self.count} {self.classname()}")
 
                 self.to_json(records)
-        logging.info(f"Retrieved {self.count} {self.classname()} records.")
 
     def _parse_statehistory(self, record, parsed):
         """Flatten timestamp records from nested state history"""
