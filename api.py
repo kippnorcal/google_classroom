@@ -27,10 +27,12 @@ class EndPoint:
         pass
 
     def _request_key(self):
+        """Convert the classname to the request key. Used to parse json response."""
         key = self.classname()
         return f"{key[0].lower()}{key[1:]}"
 
     def to_json(self, records):
+        """Write the records to the json file. Extend the file if it already exists."""
         if os.path.exists(self.filename):
             with open(self.filename, "r+") as f:
                 data = json.load(f)
@@ -42,6 +44,7 @@ class EndPoint:
                 json.dump(records, f)
 
     def to_df(self):
+        """Convert the json file for this endpoint to a dataframe and trim for data warehouse insertion."""
         with open(self.filename) as f:
             data = json.load(f)
         df = pd.json_normalize(data)
@@ -56,6 +59,7 @@ class EndPoint:
     )
     @elapsed
     def get(self, course_id=None, position=None):
+        """Execute API request and write results to json file."""
         self.next_page_token = ""
         self.count = 0
         while self.next_page_token is not None:
@@ -76,6 +80,7 @@ class EndPoint:
 
     @elapsed
     def get_by_course(self, course_ids):
+        """Loop through a list of course IDs and get results for each course."""
         course_count = len(course_ids)
         for idx, course_id in enumerate(course_ids):
             self.course_id = course_id
@@ -91,10 +96,11 @@ class StudentUsage(EndPoint):
         self.org_unit_id = os.getenv("STUDENT_ORG_UNIT")
 
     def request(self):
+        """Request all usage for the given org unit."""
         return self.service.userUsageReport().get(
             userKey="all",
             date=self.two_days_ago,
-            orgUnitID=f"id:{self.org_unit_id}",
+            orgUnitID=f"id:{self.org_unit_id}",  # This is the CleverStudents org unit ID
             pageToken=self.next_page_token,
         )
 
@@ -103,6 +109,7 @@ class StudentUsage(EndPoint):
     )
     @elapsed
     def get(self, position=None):
+        """Get all student usage and parse Google Classroom usage."""
         self.next_page_token = ""
         self.count = 0
         while self.next_page_token is not None:
@@ -144,6 +151,7 @@ class Guardians(EndPoint):
         self.columns = ["studentId", "guardianId", "invitedEmailAddress"]
 
     def request(self):
+        """Request all guardians."""
         return (
             self.service.userProfiles()
             .guardians()
@@ -165,6 +173,7 @@ class GuardianInvites(EndPoint):
         self.request_key = "guardianInvitations"
 
     def request(self):
+        """Request all pending and complete guardian invites."""
         return (
             self.service.userProfiles()
             .guardianInvitations()
@@ -198,6 +207,7 @@ class Courses(EndPoint):
         ]
 
     def request(self, course_id=None):
+        """Request all active courses."""
         return self.service.courses().list(
             pageToken=self.next_page_token, courseStates=["ACTIVE"]
         )
@@ -211,6 +221,7 @@ class Topics(EndPoint):
         self.request_key = "topic"
 
     def request(self):
+        """Request all topics for this course."""
         return (
             self.service.courses()
             .topics()
@@ -229,6 +240,7 @@ class Teachers(EndPoint):
         ]
 
     def request(self):
+        """Request all teachers for this course."""
         return (
             self.service.courses()
             .teachers()
@@ -247,6 +259,7 @@ class Students(EndPoint):
         ]
 
     def request(self):
+        """Request all students for this course."""
         return (
             self.service.courses()
             .students()
@@ -281,6 +294,7 @@ class CourseWork(EndPoint):
         ]
 
     def request(self):
+        """Request all coursework for this course."""
         return (
             self.service.courses()
             .courseWork()
@@ -315,6 +329,7 @@ class StudentSubmissions(EndPoint):
         ]
 
     def request(self):
+        """Request all student submissions for this course."""
         return (
             self.service.courses()
             .courseWork()
@@ -327,6 +342,7 @@ class StudentSubmissions(EndPoint):
     )
     @elapsed
     def get(self, course_id=None, position=None):
+        """Get student submissions and parse coursework from within the submission."""
         self.next_page_token = ""
         self.count = 0
         while self.next_page_token is not None:
