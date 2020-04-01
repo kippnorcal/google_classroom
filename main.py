@@ -63,11 +63,11 @@ def get_credentials():
     # If modifying these scopes, delete the file token.pickle.
     SCOPES = [
         "https://www.googleapis.com/auth/admin.reports.usage.readonly",
-        "https://www.googleapis.com/auth/classroom.guardianlinks.students",
         "https://www.googleapis.com/auth/classroom.courses",
-        "https://www.googleapis.com/auth/classroom.rosters",
-        "https://www.googleapis.com/auth/classroom.profile.emails",
         "https://www.googleapis.com/auth/classroom.coursework.students",
+        "https://www.googleapis.com/auth/classroom.guardianlinks.students",
+        "https://www.googleapis.com/auth/classroom.profile.emails",
+        "https://www.googleapis.com/auth/classroom.rosters",
         "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly",
         "https://www.googleapis.com/auth/classroom.topics",
     ]
