@@ -1,6 +1,8 @@
 import argparse
-import logging
+from contextlib import suppress
+from datetime import datetime, timedelta
 import json
+import logging
 import os
 import pickle
 import sys
@@ -9,6 +11,7 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 import pandas as pd
+from sqlalchemy.exc import ProgrammingError
 from sqlsorcery import MSSQL
 
 from api import (
@@ -60,13 +63,13 @@ def get_credentials():
     # If modifying these scopes, delete the file token.pickle.
     SCOPES = [
         "https://www.googleapis.com/auth/admin.reports.usage.readonly",
+        "https://www.googleapis.com/auth/classroom.guardianlinks.students",
         "https://www.googleapis.com/auth/classroom.courses",
-        "https://www.googleapis.com/auth/classroom.topics",
         "https://www.googleapis.com/auth/classroom.rosters",
         "https://www.googleapis.com/auth/classroom.profile.emails",
         "https://www.googleapis.com/auth/classroom.coursework.students",
         "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly",
-        "https://www.googleapis.com/auth/classroom.guardianlinks.students",
+        "https://www.googleapis.com/auth/classroom.topics",
     ]
     creds = None
     # The file token.pickle stores the user's access and refresh tokens, and is
@@ -118,6 +121,12 @@ def main():
         sql.insert_into(
             "GoogleClassroom_GuardianInvites", guardian_invites_df, if_exists="replace"
         )
+
+    # Get guardians
+    get_guardians(sql, classroom_service)
+
+    # Get guardian invites
+    get_guardian_invites(sql, classroom_service)
 
     # Get courses
     if args.courses:
