@@ -55,3 +55,8 @@ Run the job using a database on localhost
 ```
 docker run --rm -it --network host google_classroom
 ```
+
+### Yearly maintenance
+
+1. Confirm the org unit ID (used to get Student Usage) in the .env.
+2. In main, update Courses updateTime filter to this year.
