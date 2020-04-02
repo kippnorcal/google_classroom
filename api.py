@@ -85,20 +85,32 @@ class EndPoint:
             self.get(course_id=course_id, position=(idx, course_count))
 
 
-class StudentUsage(EndPoint):
+class OrgUnits(EndPoint):
     def __init__(self, service):
+        super().__init__(service)
+        self.date_columns = []
+        self.columns = ["name", "description", "orgUnitPath", "orgUnitId"]
+        self.request_key = "organizationUnits"
+
+    def request(self):
+        """Request org unit that matches the given path"""
+        return self.service.orgunits().list(customerId="my_customer")
+
+
+class StudentUsage(EndPoint):
+    def __init__(self, service, org_unit_id):
         super().__init__(service)
         self.date_columns = ["AsOfDate", "LastUsedTime"]
         self.columns = ["Email", "AsOfDate", "LastUsedTime"]
         self.two_days_ago = (datetime.today() - timedelta(days=2)).strftime("%Y-%m-%d")
-        self.org_unit_id = os.getenv("STUDENT_ORG_UNIT")
+        self.org_unit_id = org_unit_id
 
     def request(self):
         """Request all usage for the given org unit."""
         return self.service.userUsageReport().get(
             userKey="all",
             date=self.two_days_ago,
-            orgUnitID=f"id:{self.org_unit_id}",  # This is the CleverStudents org unit ID
+            orgUnitID=self.org_unit_id,  # This is the CleverStudents org unit ID
             pageToken=self.next_page_token,
         )
 

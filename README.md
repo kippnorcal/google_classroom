@@ -37,7 +37,7 @@ DB_PWD=
 DB_SCHEMA=
 
 # Google API variables
-STUDENT_ORG_UNIT=alphanumeric string id for the org unit (retrieve through Admin API)
+STUDENT_ORG_UNIT=name of the student org unit
 
 # Yearly settings
 SCHOOL_YEAR_START=YYYY-MM-DD

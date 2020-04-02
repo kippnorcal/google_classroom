@@ -19,6 +19,7 @@ from api import (
     CourseWork,
     GuardianInvites,
     Guardians,
+    OrgUnits,
     Students,
     StudentSubmissions,
     StudentUsage,
@@ -62,6 +63,7 @@ def get_credentials():
     """Retrieve Google auth credentials needed to build service"""
     # If modifying these scopes, delete the file token.pickle.
     SCOPES = [
+        "https://www.googleapis.com/auth/admin.directory.orgunit",
         "https://www.googleapis.com/auth/admin.reports.usage.readonly",
         "https://www.googleapis.com/auth/classroom.courses",
         "https://www.googleapis.com/auth/classroom.coursework.students",
@@ -95,13 +97,23 @@ def get_credentials():
 def main():
     creds = get_credentials()
     classroom_service = build("classroom", "v1", credentials=creds)
-    admin_service = build("admin", "reports_v1", credentials=creds)
+    admin_reports_service = build("admin", "reports_v1", credentials=creds)
+    admin_directory_service = build("admin", "directory_v1", credentials=creds)
 
     sql = MSSQL()
 
     # Get usage
     if args.usage:
-        student_usage = StudentUsage(admin_service)
+        # First get student org unit
+        org_units = OrgUnits(admin_directory_service)
+        org_units.get()
+        ou_df = org_units.to_df()
+        ou_id = ou_df.loc[
+            ou_df.name == os.getenv("STUDENT_ORG_UNIT"), "orgUnitId"
+        ].iloc[0]
+
+        # Then get usage
+        student_usage = StudentUsage(admin_reports_service, ou_id)
         student_usage.get()
         student_usage_df = student_usage.to_df()
         logging.info(f"Inserting {len(student_usage_df)} Student Usage records.")
