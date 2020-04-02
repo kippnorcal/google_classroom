@@ -21,7 +21,7 @@ git clone https://github.com/kipp-bayarea/google_classroom.git
 - Docker can be installed directly from the website at docker.com.
 - Pipenv can be installed via Pip or Homebrew, and is only needed for local development or to generate an initial token.
 
-2. Create .env file with project secrets
+3. Create .env file with project secrets
 
 Database variables are configured in the format used by [Sqlsorcery](https://sqlsorcery.readthedocs.io/en/latest/cookbook/environment.html).
 
@@ -43,13 +43,13 @@ STUDENT_ORG_UNIT=alphanumeric string id for the org unit (retrieve through Admin
 SCHOOL_YEAR_START=YYYY-MM-DD
 ```
 
-3. Enable APIs in Developer Console
+4. Enable APIs in Developer Console
 
 - Navigate to the [API library](https://console.developers.google.com/apis/library) in the developer console.
 - Search for Google Classroom, and Enable it.
 - Search for Admin SDK, and Enable it.
 
-4. Generate the `token.pickle` and `credentials.json` files.
+5. Generate the `token.pickle` and `credentials.json` files.
 
 The token and credentials files authenticate the Google user in order to run this application.
 
