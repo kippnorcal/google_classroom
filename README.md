@@ -1,9 +1,10 @@
 # googleclassroom
 
 ## Dependencies:
-* Python3.7
-* [Pipenv](https://pipenv.readthedocs.io/en/latest/)
-* [Docker](https://www.docker.com/)
+
+- Python3.7
+- [Pipenv](https://pipenv.readthedocs.io/en/latest/)
+- [Docker](https://www.docker.com/)
 
 ## Getting Started
 
@@ -15,7 +16,21 @@
 git clone https://github.com/kipp-bayarea/google_classroom.git
 ```
 
+2. Install dependencies
+
+- Pipenv is most commonly installed via Homebrew.
+- Docker can be installed directly from the website at docker.com.
+
+```
+brew install pipenv
+```
+
 2. Create .env file with project secrets
+
+Database variables are configured in the format used by [Sqlsorcery](https://github.com/dchess/sqlsorcery).
+
+STUDENT_ORG_UNIT represents the Google Admin organizational unit that students belong to.
+It will filter student reports to that specific organization.
 
 ```
 # Database variables
@@ -32,11 +47,35 @@ STUDENT_ORG_UNIT=alphanumeric string id for the org unit (retrieve through Admin
 SCHOOL_YEAR_START=YYYY-MM-DD
 ```
 
-3. Generate the `token.pickle` and `credentials.json` files.
+3. Create a folder for logging and caching data.
 
-* Use Google authentication flow.
-* It can't be done through Docker.
-* Either need to run it in pipenv the first time, or copy the two files from an existing working project.
+```
+mkdir data
+```
+
+4. Enable APIs in Developer Console
+
+- Navigate to the [API library](https://console.developers.google.com/apis/library) in the developer console.
+- Search for Google Classroom, and Enable it.
+- Search for Admin SDK, and Enable it.
+
+5. Generate the `token.pickle` and `credentials.json` files.
+
+The token and credentials files authenticate the Google user in order to run this application.
+
+Credentials.json:
+
+- Follow instructions to [create authorization credentials](https://developers.google.com/identity/protocols/oauth2/web-server#creatingcred)
+  - For local development: Authorized redirect URIs should be `http://localhost/`.
+- Existing credentials can be accessed through the [Google Developer Console](https://console.developers.google.com/apis/credentials?pli=1).
+
+Token.pickle: The initial token.pickle file must be generated locally prior to using Docker.
+This can be done by running the script locally the first time.
+
+```
+pipenv install --skip-lock
+pipenv run python main.py
+```
 
 ### Running the job
 
@@ -46,12 +85,11 @@ Build the Docker image
 docker build -t google_classroom .
 ```
 
-
 Run the job
+
 ```
 docker run --rm -it google_classroom
 ```
-
 
 Run the job using a database on localhost
 
