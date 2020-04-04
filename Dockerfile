@@ -1,4 +1,4 @@
-FROM python:3
+FROM python:3.7
 WORKDIR /code
 # SQL dependencies
 RUN wget https://packages.microsoft.com/debian/9/prod/pool/main/m/msodbcsql17/msodbcsql17_17.5.2.1-1_amd64.deb
