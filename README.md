@@ -23,17 +23,12 @@ git clone https://github.com/kipp-bayarea/google_classroom.git
 
 3. Create .env file with project secrets
 
-Database variables are configured in the format used by [Sqlsorcery](https://sqlsorcery.readthedocs.io/en/latest/cookbook/environment.html).
-
 STUDENT_ORG_UNIT represents the Google Admin organizational unit that students belong to.
 It will filter student reports to that specific organization.
 
 ```
 # Database variables
-DB_SERVER=
-DB=
-DB_USER=
-DB_PWD=
+DB_URL=
 DB_SCHEMA=
 
 # Google API variables

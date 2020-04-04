@@ -12,7 +12,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 import pandas as pd
 from sqlalchemy.exc import ProgrammingError
-from sqlsorcery import MSSQL
+from sqlalchemy import create_engine
 
 from api import (
     Courses,
@@ -99,7 +99,8 @@ def main():
     classroom_service = build("classroom", "v1", credentials=creds)
     admin_reports_service = build("admin", "reports_v1", credentials=creds)
     admin_directory_service = build("admin", "directory_v1", credentials=creds)
-    sql = MSSQL()
+    engine = create_engine(os.getenv("DB_URL"))
+    schema = os.getenv("DB_SCHEMA")
 
     def get_values_and_write_to_db(endpoint, description, table_name, if_exists="replace",
                                    course_ids=[]):
@@ -110,7 +111,8 @@ def main():
         endpoint_df = endpoint.to_df()
         logging.info(f"Inserting {len(endpoint_df)} {description} records.")
         if not endpoint_df.empty:
-            sql.insert_into(table_name, endpoint_df, if_exists=if_exists)
+            endpoint_df.to_sql(table_name, engine, schema=schema,
+                               if_exists=if_exists, index=False)
 
     # Get usage
     if args.usage:
@@ -147,11 +149,11 @@ def main():
         courses_df = courses_df[courses_df.updateTime >= os.getenv("SCHOOL_YEAR_START")]
         logging.info(f"Inserting {len(courses_df)} Course records.")
         if not courses_df.empty:
-            sql.insert_into("GoogleClassroom_Courses", courses_df, if_exists="replace")
+            courses_df.to_sql("GoogleClassroom_Courses", engine,
+                              schema=schema, if_exists="replace", index=False)
 
     # Get list of course ids
-    course_ids = sql.query("SELECT id FROM \"GoogleClassroom_Courses\"")
-    course_ids = course_ids.id.unique()
+    course_ids = pd.read_sql_query("SELECT id FROM \"GoogleClassroom_Courses\"", engine).id.unique()
 
     # Get course topics
     if args.topics:
