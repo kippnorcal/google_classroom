@@ -100,7 +100,6 @@ def main():
     admin_reports_service = build("admin", "reports_v1", credentials=creds)
     admin_directory_service = build("admin", "directory_v1", credentials=creds)
     sql = MSSQL()
-    prefix = "GoogleClassroom_"
 
     def get_values_and_write_to_db(endpoint, table_name, if_exists="replace", course_ids=[]):
         if len(course_ids) > 0:
@@ -111,7 +110,7 @@ def main():
         write_df_to_db(endpoint_df, table_name, if_exists)
 
     def write_df_to_db(dataframe, table_name, if_exists="replace"):
-        full_table_name = prefix + table_name
+        full_table_name = "GoogleClassroom_" + table_name
         logging.info(f"Inserting {len(dataframe)} records into {full_table_name}.")
         if not dataframe.empty:
             sql.insert_into(full_table_name, dataframe, if_exists=if_exists)
