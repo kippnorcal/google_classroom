@@ -30,11 +30,24 @@ It will filter student reports to that specific organization.
 
 ```
 # Database variables
+DB_TYPE=The type of database you are using. Current options: mssql, postgres, sqlite
 DB_SERVER=
 DB=
 DB_USER=
 DB_PWD=
 DB_SCHEMA=
+
+# OPTIONAL: Data Pulls To Enable. Set to "YES" to include that pull.
+# These can be left out in favor of command line arguments.
+PULL_USAGE=
+PULL_COURSES=
+PULL_TOPICS=
+PULL_COURSEWORK=
+PULL_STUDENTS=
+PULL_TEACHERS=
+PULL_GUARDIANS=
+PULL_SUBMISSIONS=
+PULL_GUARDIAN_INVITES=
 
 # Google API variables
 STUDENT_ORG_UNIT=name of the student org unit
@@ -86,6 +99,20 @@ Run the job using a database on localhost
 ```
 docker run --rm -it --network host google_classroom
 ```
+
+Optional flags will include different types of pulls (can also be done via env variables):
+
+- `--usage`
+- `--courses`
+- `--topics`
+- `--coursework`
+- `--students`
+- `--teachers`
+- `--guardians`
+- `--submissions`
+- `--invites`
+
+Use the flag `--debug` to turn on debug logging.
 
 ### Yearly maintenance
 
