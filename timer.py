@@ -17,11 +17,12 @@ def elapsed(func):
     """Decorator function used to compute and report the time a
     function takes to complete. Add to a function as: @elapsed"""
 
-    def wrapper(*args):
+    def wrapper(*args, **kwargs):
         start = time.time()
-        func(*args)
+        results = func(*args, **kwargs)
         end = time.time()
         elapsed = round(end - start, 2)
         logging.info(_timer_message(func, elapsed))
+        return results
 
     return wrapper
