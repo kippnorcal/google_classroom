@@ -42,6 +42,9 @@ parser.add_argument(
 parser.add_argument(
     "--invites", help="Import guardian invite statuses", action="store_true"
 )
+parser.add_argument(
+    "--debug", help="Set logging level for troubleshooting", action="store_true"
+)
 args = parser.parse_args()
 
 logging.basicConfig(
@@ -49,7 +52,7 @@ logging.basicConfig(
         logging.FileHandler(filename="data/app.log", mode="w+"),
         logging.StreamHandler(sys.stdout),
     ],
-    level=logging.DEBUG,
+    level=logging.DEBUG if args.debug else logging.INFO,
     format="%(asctime)s | %(levelname)s: %(message)s",
     datefmt="%Y-%m-%d %I:%M:%S%p %Z",
 )
@@ -135,8 +138,15 @@ def main():
         sql.insert_into("GoogleClassroom_Courses", courses_df, if_exists="replace")
 
     # Get list of course ids
-    course_ids = sql.query("SELECT id FROM custom.GoogleClassroom_Courses")
-    course_ids = course_ids.id.unique()
+    if (
+        args.topics
+        or args.coursework
+        or args.students
+        or args.teachers
+        or args.submissions
+    ):
+        course_ids = sql.query("SELECT id FROM custom.GoogleClassroom_Courses")
+        course_ids = course_ids.id.unique()
 
     # Get course topics
     if args.topics:
