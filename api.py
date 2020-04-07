@@ -56,7 +56,8 @@ class EndPoint:
             return df
         except FileNotFoundError:
             logging.warning(
-                f"Unable to open {self.filename} for read access, as it does not exist.")
+                f"Unable to open {self.filename} for read access, as it does not exist."
+            )
             return pd.DataFrame()
 
     @retry(
@@ -119,7 +120,7 @@ class StudentUsage(EndPoint):
         }
         if self.org_unit_id:
             # This is the CleverStudents org unit ID
-            options["orgUnitId"] = f"id:{self.org_unit_id}"
+            options["orgUnitID"] = self.org_unit_id
         return self.service.userUsageReport().get(**options)
 
     @retry(

@@ -43,6 +43,9 @@ parser.add_argument(
 parser.add_argument(
     "--invites", help="Import guardian invite statuses", action="store_true"
 )
+parser.add_argument(
+    "--debug", help="Set logging level for troubleshooting", action="store_true"
+)
 args = parser.parse_args()
 
 logging.basicConfig(
@@ -50,7 +53,7 @@ logging.basicConfig(
         logging.FileHandler(filename="data/app.log", mode="w+"),
         logging.StreamHandler(sys.stdout),
     ],
-    level=logging.DEBUG,
+    level=logging.DEBUG if args.debug else logging.INFO,
     format="%(asctime)s | %(levelname)s: %(message)s",
     datefmt="%Y-%m-%d %I:%M:%S%p %Z",
 )
@@ -94,7 +97,9 @@ def get_credentials():
     return creds
 
 
-def get_values_and_write_to_db(sql, endpoint, table_name, if_exists="replace", course_ids=[]):
+def get_values_and_write_to_db(
+    sql, endpoint, table_name, if_exists="replace", course_ids=[]
+):
     if len(course_ids) > 0:
         endpoint.get_by_course(course_ids)
     else:
@@ -123,14 +128,14 @@ def main():
         org_units = OrgUnits(admin_directory_service)
         org_units.get()
         ou_df = org_units.to_df()
-        ou_series = ou_df.loc[
-            ou_df.name == os.getenv("STUDENT_ORG_UNIT"), "orgUnitId"
-        ]
+        ou_series = ou_df.loc[ou_df.name == os.getenv("STUDENT_ORG_UNIT"), "orgUnitId"]
         ou_id = None if ou_series.empty else ou_series.iloc[0]
 
         # Then get usage
         student_usage = StudentUsage(admin_reports_service, ou_id)
-        get_values_and_write_to_db(sql, student_usage, "StudentUsage", if_exists="append")
+        get_values_and_write_to_db(
+            sql, student_usage, "StudentUsage", if_exists="append"
+        )
 
     # Get guardians
     if args.guardians:
@@ -151,8 +156,17 @@ def main():
         write_df_to_db(sql, courses_df, "Courses", if_exists="replace")
 
     # Get list of course ids
-    course_ids = sql.query("SELECT id FROM \"GoogleClassroom_Courses\"")
-    course_ids = course_ids.id.unique()
+    if (
+        args.topics
+        or args.coursework
+        or args.students
+        or args.teachers
+        or args.submissions
+    ):
+        courses = pd.read_sql_table(
+            "GoogleClassroom_Courses", con=sql.engine, schema=sql.schema
+        )
+        course_ids = courses.id.unique()
 
     # Get course topics
     if args.topics:
@@ -162,7 +176,9 @@ def main():
     # Get CourseWork
     if args.coursework:
         course_work = CourseWork(classroom_service)
-        get_values_and_write_to_db(sql, course_work, "CourseWork", course_ids=course_ids)
+        get_values_and_write_to_db(
+            sql, course_work, "CourseWork", course_ids=course_ids
+        )
 
     # Get students and insert into database
     if args.students:
@@ -178,7 +194,8 @@ def main():
     if args.submissions:
         student_submissions = StudentSubmissions(classroom_service)
         get_values_and_write_to_db(
-            sql, student_submissions, "CourseworkSubmissions", course_ids=course_ids)
+            sql, student_submissions, "CourseworkSubmissions", course_ids=course_ids
+        )
 
 
 if __name__ == "__main__":
