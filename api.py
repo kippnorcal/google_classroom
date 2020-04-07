@@ -3,7 +3,7 @@ import json
 import logging
 import os
 
-from googleapiclient.http import BatchHttpRequest
+from googleapiclient.http import HttpError
 import pandas as pd
 from tenacity import retry, stop_after_attempt, wait_exponential
 
@@ -45,14 +45,19 @@ class EndPoint:
 
     def to_df(self):
         """Convert the json file for this endpoint to a dataframe and trim for data warehouse insertion."""
-        with open(self.filename) as f:
-            data = json.load(f)
-        df = pd.json_normalize(data)
-        df = df[self.columns]
-        if self.date_columns:
-            date_types = {col: "datetime64[ns]" for col in self.date_columns}
-            df = df.astype(date_types)
-        return df
+        try:
+            with open(self.filename) as f:
+                data = json.load(f)
+            df = pd.json_normalize(data)
+            df = df.reindex(columns=self.columns)
+            if self.date_columns:
+                date_types = {col: "datetime64[ns]" for col in self.date_columns}
+                df = df.astype(date_types)
+            return df
+        except FileNotFoundError:
+            logging.warning(
+                f"Unable to open {self.filename} for read access, as it does not exist.")
+            return pd.DataFrame()
 
     @retry(
         stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
@@ -85,22 +90,37 @@ class EndPoint:
             self.get(course_id=course_id, position=(idx, course_count))
 
 
-class StudentUsage(EndPoint):
+class OrgUnits(EndPoint):
     def __init__(self, service):
+        super().__init__(service)
+        self.date_columns = []
+        self.columns = ["name", "description", "orgUnitPath", "orgUnitId"]
+        self.request_key = "organizationUnits"
+
+    def request(self):
+        """Request org unit that matches the given path"""
+        return self.service.orgunits().list(customerId="my_customer")
+
+
+class StudentUsage(EndPoint):
+    def __init__(self, service, org_unit_id):
         super().__init__(service)
         self.date_columns = ["AsOfDate", "LastUsedTime"]
         self.columns = ["Email", "AsOfDate", "LastUsedTime"]
         self.two_days_ago = (datetime.today() - timedelta(days=2)).strftime("%Y-%m-%d")
-        self.org_unit_id = os.getenv("STUDENT_ORG_UNIT")
+        self.org_unit_id = org_unit_id
 
     def request(self):
         """Request all usage for the given org unit."""
-        return self.service.userUsageReport().get(
-            userKey="all",
-            date=self.two_days_ago,
-            orgUnitID=f"id:{self.org_unit_id}",  # This is the CleverStudents org unit ID
-            pageToken=self.next_page_token,
-        )
+        options = {
+            "userKey": "all",
+            "date": self.two_days_ago,
+            "pageToken": self.next_page_token,
+        }
+        if self.org_unit_id:
+            # This is the CleverStudents org unit ID
+            options["orgUnitId"] = f"id:{self.org_unit_id}"
+        return self.service.userUsageReport().get(**options)
 
     @retry(
         stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
@@ -111,7 +131,11 @@ class StudentUsage(EndPoint):
         self.next_page_token = ""
         self.count = 0
         while self.next_page_token is not None:
-            results = self.request().execute()
+            try:
+                results = self.request().execute()
+            except HttpError as error:
+                logging.debug(error)
+                return
             records = results.get("usageReports")
             records = self._parse_classroom_usage(records)
             self.count += len(records)
