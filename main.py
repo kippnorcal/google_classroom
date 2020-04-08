@@ -77,92 +77,90 @@ def get_credentials():
 
 
 def main(config):
+    configure_logging(config)
+    creds = get_credentials()
+    classroom_service = build("classroom", "v1", credentials=creds)
+    admin_reports_service = build("admin", "reports_v1", credentials=creds)
+    admin_directory_service = build("admin", "directory_v1", credentials=creds)
+    sql = db_generator(config)
+
+    # Get usage
+    if config.PULL_USAGE:
+        # First get student org unit
+        result = OrgUnits(
+            admin_directory_service, config.STUDENT_ORG_UNIT
+        ).get_and_write_to_db(sql, debug=config.DEBUG)
+        ou_id = None if result.empty else result.iloc[0]
+
+        # Then get usage
+        StudentUsage(admin_reports_service, ou_id).get_and_write_to_db(
+            sql, overwrite=False, debug=config.DEBUG
+        )
+
+    # Get guardians
+    if config.PULL_GUARDIANS:
+        Guardians(classroom_service).get_and_write_to_db(sql, debug=config.DEBUG)
+
+    # Get guardian invites
+    if config.PULL_GUARDIAN_INVITES:
+        GuardianInvites(classroom_service).get_and_write_to_db(
+            sql, debug=config.DEBUG
+        )
+
+    # Get courses
+    if config.PULL_COURSES:
+        Courses(classroom_service, config.SCHOOL_YEAR_START).get_and_write_to_db(
+            sql, debug=config.DEBUG
+        )
+
+    # Get list of course ids
+    if (
+        config.PULL_TOPICS
+        or config.PULL_COURSEWORK
+        or config.PULL_STUDENTS
+        or config.PULL_TEACHERS
+        or config.PULL_SUBMISSIONS
+    ):
+        course_ids = Courses(
+            classroom_service, config.SCHOOL_YEAR_START
+        ).get_course_ids(sql)
+
+    # Get course topics
+    if config.PULL_TOPICS:
+        Topics(classroom_service).get_and_write_to_db(
+            sql, course_ids, debug=config.DEBUG
+        )
+
+    # Get CourseWork
+    if config.PULL_COURSEWORK:
+        CourseWork(classroom_service).get_and_write_to_db(
+            sql, course_ids, debug=config.DEBUG
+        )
+
+    # Get students and insert into database
+    if config.PULL_STUDENTS:
+        Students(classroom_service).get_and_write_to_db(
+            sql, course_ids, debug=config.DEBUG
+        )
+
+    # Get teachers and insert into database
+    if config.PULL_TEACHERS:
+        Teachers(classroom_service).get_and_write_to_db(
+            sql, course_ids, debug=config.DEBUG
+        )
+
+    # Get student coursework submissions
+    if config.PULL_SUBMISSIONS:
+        StudentSubmissions(classroom_service).get_and_write_to_db(
+            sql, course_ids, debug=config.DEBUG
+        )
+
+        
+if __name__ == "__main__":
     try:
-        configure_logging(config)
-        creds = get_credentials()
-        classroom_service = build("classroom", "v1", credentials=creds)
-        admin_reports_service = build("admin", "reports_v1", credentials=creds)
-        admin_directory_service = build("admin", "directory_v1", credentials=creds)
-        sql = db_generator(config)
-
-        # Get usage
-        if config.PULL_USAGE:
-            # First get student org unit
-            result = OrgUnits(
-                admin_directory_service, config.STUDENT_ORG_UNIT
-            ).get_and_write_to_db(sql, debug=config.DEBUG)
-            ou_id = None if result.empty else result.iloc[0]
-
-            # Then get usage
-            StudentUsage(admin_reports_service, ou_id).get_and_write_to_db(
-                sql, overwrite=False, debug=config.DEBUG
-            )
-
-        # Get guardians
-        if config.PULL_GUARDIANS:
-            Guardians(classroom_service).get_and_write_to_db(sql, debug=config.DEBUG)
-
-        # Get guardian invites
-        if config.PULL_GUARDIAN_INVITES:
-            GuardianInvites(classroom_service).get_and_write_to_db(
-                sql, debug=config.DEBUG
-            )
-
-        # Get courses
-        if config.PULL_COURSES:
-            Courses(classroom_service, config.SCHOOL_YEAR_START).get_and_write_to_db(
-                sql, debug=config.DEBUG
-            )
-
-        # Get list of course ids
-        if (
-            config.PULL_TOPICS
-            or config.PULL_COURSEWORK
-            or config.PULL_STUDENTS
-            or config.PULL_TEACHERS
-            or config.PULL_SUBMISSIONS
-        ):
-            course_ids = Courses(
-                classroom_service, config.SCHOOL_YEAR_START
-            ).get_course_ids(sql)
-
-        # Get course topics
-        if config.PULL_TOPICS:
-            Topics(classroom_service).get_and_write_to_db(
-                sql, course_ids, debug=config.DEBUG
-            )
-
-        # Get CourseWork
-        if config.PULL_COURSEWORK:
-            CourseWork(classroom_service).get_and_write_to_db(
-                sql, course_ids, debug=config.DEBUG
-            )
-
-        # Get students and insert into database
-        if config.PULL_STUDENTS:
-            Students(classroom_service).get_and_write_to_db(
-                sql, course_ids, debug=config.DEBUG
-            )
-
-        # Get teachers and insert into database
-        if config.PULL_TEACHERS:
-            Teachers(classroom_service).get_and_write_to_db(
-                sql, course_ids, debug=config.DEBUG
-            )
-
-        # Get student coursework submissions
-        if config.PULL_SUBMISSIONS:
-            StudentSubmissions(classroom_service).get_and_write_to_db(
-                sql, course_ids, debug=config.DEBUG
-            )
-
+        main(Config)
         Mailer("Google Classroom Connector").notify()
-
-    except Exception as e:
+     except Exception as e:
         logging.exception(e)
         stack_trace = traceback.format_exc()
         Mailer("Google Classroom Connector").notify(error=True, message=stack_trace)
-
-
-if __name__ == "__main__":
-    main(Config)
