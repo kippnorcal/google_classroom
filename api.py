@@ -2,11 +2,10 @@ from datetime import datetime, timedelta
 import json
 import logging
 import os
-
 from googleapiclient.http import HttpError
 import pandas as pd
 from tenacity import retry, stop_after_attempt, wait_exponential
-
+from sqlalchemy.schema import DropTable
 from timer import elapsed
 
 
@@ -21,86 +20,130 @@ class EndPoint:
         self.columns = []
         self.date_columns = []
         self.course_id = None
-        self.request_key = self._request_key()
+        self.request_key = None
+        self.table_name = f"GoogleClassroom_{self.classname()}"
 
-    def request(self):
-        pass
+    def request_data(self):
+        """
+        Returns a request object for calling the Google Classroom API for that class.
+        Must be overridden by a subclass.
+        """
+        raise Exception("Request function must be overridden in subclass.")
 
-    def _request_key(self):
-        """Convert the classname to the request key. Used to parse json response."""
-        key = self.classname()
-        return f"{key[0].lower()}{key[1:]}"
+    def preprocess_records(self, records):
+        """
+        Any preprocessing that needs to be done to records before they are mapped to columns.
+        Intended to be overridden by subclasses as needed.
+        """
+        return records
 
-    def to_json(self, records):
-        """Write the records to the json file. Extend the file if it already exists."""
+    def filter_data(self, dataframe):
+        """
+        Any basic filtering done after data is converted into a dataframe.
+        Intended to be overridden by subclasses as needed.
+        """
+        return dataframe
+
+    def _process_and_filter_records(self, records):
+        """Processes incoming records and converts them into a cleaned dataframe"""
+        new_records = self.preprocess_records(records)
+        df = pd.json_normalize(new_records)
+        df = df.reindex(columns=self.columns)
+        df = self.filter_data(df)
+        if self.date_columns:
+            date_types = {col: "datetime64[ns]" for col in self.date_columns}
+            df = df.astype(date_types)
+        return df
+
+    def _write_to_db(self, sql, df):
+        """Writes the data into the related table"""
+        logging.info(f"{self.classname()}: inserting {len(df)} records into {self.table_name}.")
+        sql.insert_into(self.table_name, df)
+
+    def _delete_local_file(self):
         if os.path.exists(self.filename):
-            with open(self.filename, "r+") as f:
-                data = json.load(f)
-                data.extend(records)
-                f.seek(0)
-                json.dump(data, f)
-        else:
-            with open(self.filename, "w") as f:
-                json.dump(records, f)
+            os.remove(self.filename)
 
-    def to_df(self):
-        """Convert the json file for this endpoint to a dataframe and trim for data warehouse insertion."""
-        try:
-            with open(self.filename) as f:
-                data = json.load(f)
-            df = pd.json_normalize(data)
-            df = df.reindex(columns=self.columns)
-            if self.date_columns:
-                date_types = {col: "datetime64[ns]" for col in self.date_columns}
-                df = df.astype(date_types)
-            return df
-        except FileNotFoundError:
-            logging.warning(
-                f"Unable to open {self.filename} for read access, as it does not exist."
-            )
-            return pd.DataFrame()
+    def _write_json_to_file(self, json_data):
+        mode = "a" if os.path.exists(self.filename) else "w"
+        with open(self.filename, mode) as file:
+            file.seek(0)
+            json.dump(json_data, file)
 
     @retry(
         stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
     )
-    def get(self, course_id=None, position=None):
-        """Execute API request and write results to json file."""
-        self.next_page_token = ""
-        self.count = 0
-        while self.next_page_token is not None:
-            results = self.request().execute()
-            records = results.get(self.request_key, [])
-            self.count += len(records)
-            self.next_page_token = results.get("nextPageToken", None)
-            if len(records) > 0:
-                if course_id:
-                    logging.debug(
-                        f"Getting {self.count} {self.classname()} for course {course_id} | {position[0]}/{position[1]}"
-                    )
-                else:
-                    logging.debug(f"Getting {self.count} {self.classname()}")
-
-                self.to_json(records)
-
     @elapsed
-    def get_by_course(self, course_ids):
-        """Loop through a list of course IDs and get results for each course."""
-        course_count = len(course_ids)
+    def get_and_write_to_db(self, sql, course_ids=[None], overwrite=True, debug=True):
+        """Execute API request and write results to json file."""
+        # In cases where everything is overwritten, drop the table first.
+        # Dropping rather than truncating allows for easy schema changes without migrating.
+        if overwrite:
+            try:
+                # Try/catch in case table doesn't exist.
+                table = sql.table(self.table_name)
+                sql.engine.execute(DropTable(table))
+            except:
+                pass
+
+        if debug:
+            self._delete_local_file()
+
+        # Keep track of data cumulatively so that it can be returned at the end.
+        all_data = pd.DataFrame()
+
+        # For some endpoints, each course must be requested separately.
+        # TODO: Batch course requests together to speed up processing.
         for idx, course_id in enumerate(course_ids):
+            logging.info(f"{self.classname()}: processing course {idx + 1}/{len(course_ids)}")
             self.course_id = course_id
-            self.get(course_id=course_id, position=(idx, course_count))
+            self.next_page_token = ""
+            count = 1
+            while self.next_page_token is not None:
+                try:
+                    results = self.request_data().execute()
+                except HttpError as error:
+                    # Currently this can happen with StudentUsage when the date is too recent.
+                    logging.debug(error)
+                    return pd.DataFrame()
+
+                if "warnings" in results:
+                    # Examples of warnings include partial data availability in StudentUsage.
+                    for warning in results["warnings"]:
+                        logging.debug(f"{warning['code']}: {warning['message']}")
+
+                records = results.get(self.request_key, [])
+                logging.info(
+                    f"{self.classname()}: retrieved {len(records)} records from page {count}")
+                count += 1
+                self.next_page_token = results.get("nextPageToken", None)
+
+                if len(records) > 0:
+                    if debug:
+                        # Log results to a text file for audit purposes
+                        self._write_json_to_file(records)
+
+                    #  Process the records and write them to a database.
+                    df = self._process_and_filter_records(records)
+                    self._write_to_db(sql, df)
+                    all_data = all_data.append(df)
+        return all_data
 
 
 class OrgUnits(EndPoint):
-    def __init__(self, service):
+    def __init__(self, service, student_org_unit=None):
         super().__init__(service)
         self.date_columns = []
         self.columns = ["name", "description", "orgUnitPath", "orgUnitId"]
         self.request_key = "organizationUnits"
+        self.student_org_unit = student_org_unit
 
-    def request(self):
+    def request_data(self):
         """Request org unit that matches the given path"""
         return self.service.orgunits().list(customerId="my_customer")
+
+    def filter_data(self, dataframe):
+        return dataframe.loc[dataframe.name == self.student_org_unit, "orgUnitId"]
 
 
 class StudentUsage(EndPoint):
@@ -110,9 +153,14 @@ class StudentUsage(EndPoint):
         self.columns = ["Email", "AsOfDate", "LastUsedTime"]
         self.two_days_ago = (datetime.today() - timedelta(days=2)).strftime("%Y-%m-%d")
         self.org_unit_id = org_unit_id
+        self.request_key = "usageReports"
 
-    def request(self):
+    def request_data(self):
         """Request all usage for the given org unit."""
+        # TODO: This should use the last date already in the database and request all data from that
+        #       date onwards. This is because partial data can come through on a given day, and
+        #       there is no indication that a day was incomplete. This allows for idempotence while
+        #       not dropping tables like the other classes.
         options = {
             "userKey": "all",
             "date": self.two_days_ago,
@@ -123,29 +171,7 @@ class StudentUsage(EndPoint):
             options["orgUnitID"] = self.org_unit_id
         return self.service.userUsageReport().get(**options)
 
-    @retry(
-        stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
-    )
-    @elapsed
-    def get(self, position=None):
-        """Get all student usage and parse Google Classroom usage."""
-        self.next_page_token = ""
-        self.count = 0
-        while self.next_page_token is not None:
-            try:
-                results = self.request().execute()
-            except HttpError as error:
-                logging.debug(error)
-                return
-            records = results.get("usageReports")
-            records = self._parse_classroom_usage(records)
-            self.count += len(records)
-            self.next_page_token = results.get("nextPageToken", None)
-            if len(records) > 0:
-                logging.debug(f"Getting {self.count} {self.classname()}")
-                self.to_json(records)
-
-    def _parse_classroom_usage(self, usage_data):
+    def preprocess_records(self, usage_data):
         """Parse classroom usage data into a dataframe with one row per user."""
         records = []
         for record in usage_data:
@@ -171,8 +197,9 @@ class Guardians(EndPoint):
         super().__init__(service)
         self.date_columns = []
         self.columns = ["studentId", "guardianId", "invitedEmailAddress"]
+        self.request_key = "guardians"
 
-    def request(self):
+    def request_data(self):
         """Request all guardians."""
         return (
             self.service.userProfiles()
@@ -194,7 +221,7 @@ class GuardianInvites(EndPoint):
         ]
         self.request_key = "guardianInvitations"
 
-    def request(self):
+    def request_data(self):
         """Request all pending and complete guardian invites."""
         return (
             self.service.userProfiles()
@@ -208,7 +235,7 @@ class GuardianInvites(EndPoint):
 
 
 class Courses(EndPoint):
-    def __init__(self, service):
+    def __init__(self, service, school_year_start):
         super().__init__(service)
         self.date_columns = ["creationTime", "updateTime"]
         self.columns = [
@@ -227,12 +254,21 @@ class Courses(EndPoint):
             "teacherGroupEmail",
             "updateTime",
         ]
+        self.request_key = "courses"
+        self.school_year_start = school_year_start
 
-    def request(self, course_id=None):
+    def get_course_ids(self, sql):
+        courses = pd.read_sql_table(self.table_name, con=sql.engine, schema=sql.schema)
+        return courses.id.unique()
+
+    def request_data(self):
         """Request all active courses."""
         return self.service.courses().list(
             pageToken=self.next_page_token, courseStates=["ACTIVE"]
         )
+
+    def filter_data(self, dataframe):
+        return dataframe[dataframe.updateTime >= self.school_year_start]
 
 
 class Topics(EndPoint):
@@ -242,7 +278,7 @@ class Topics(EndPoint):
         self.columns = ["courseId", "topicId", "name", "updateTime"]
         self.request_key = "topic"
 
-    def request(self):
+    def request_data(self):
         """Request all topics for this course."""
         return (
             self.service.courses()
@@ -260,8 +296,9 @@ class Teachers(EndPoint):
             "profile.name.fullName",
             "profile.emailAddress",
         ]
+        self.request_key = "teachers"
 
-    def request(self):
+    def request_data(self):
         """Request all teachers for this course."""
         return (
             self.service.courses()
@@ -279,8 +316,9 @@ class Students(EndPoint):
             "profile.name.fullName",
             "profile.emailAddress",
         ]
+        self.request_key = "students"
 
-    def request(self):
+    def request_data(self):
         """Request all students for this course."""
         return (
             self.service.courses()
@@ -314,8 +352,9 @@ class CourseWork(EndPoint):
             "creatorUserId",
             "topicId",
         ]
+        self.request_key = "courseWork"
 
-    def request(self):
+    def request_data(self):
         """Request all coursework for this course."""
         return (
             self.service.courses()
@@ -349,8 +388,9 @@ class StudentSubmissions(EndPoint):
             "assignedGradeTimestamp",
             "assignedGraderId",
         ]
+        self.request_key = "studentSubmissions"
 
-    def request(self):
+    def request_data(self):
         """Request all student submissions for this course."""
         return (
             self.service.courses()
@@ -358,29 +398,6 @@ class StudentSubmissions(EndPoint):
             .studentSubmissions()
             .list(courseId=self.course_id, courseWorkId="-")
         )
-
-    @retry(
-        stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
-    )
-    def get(self, course_id=None, position=None):
-        """Get student submissions and parse coursework from within the submission."""
-        self.next_page_token = ""
-        self.count = 0
-        while self.next_page_token is not None:
-            results = self.request().execute()
-            records = results.get(self.request_key, [])
-            records = self._parse_coursework(records)
-            self.count += len(records)
-            self.next_page_token = results.get("nextPageToken", None)
-            if len(records) > 0:
-                if course_id:
-                    logging.debug(
-                        f"Getting {self.count} {self.classname()} for course {course_id} | {position[0]}/{position[1]}"
-                    )
-                else:
-                    logging.debug(f"Getting {self.count} {self.classname()}")
-
-                self.to_json(records)
 
     def _parse_statehistory(self, record, parsed):
         """Flatten timestamp records from nested state history"""
@@ -422,7 +439,7 @@ class StudentSubmissions(EndPoint):
                         )
                         parsed["assignedGraderId"] = grade_history.get("actorUserId")
 
-    def _parse_coursework(self, coursework):
+    def preprocess_records(self, coursework):
         """Parse the coursework nested json into flat records for insertion
         in to database table"""
         records = []

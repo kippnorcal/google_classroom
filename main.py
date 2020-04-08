@@ -1,17 +1,14 @@
-from contextlib import suppress
 from datetime import datetime, timedelta
-import json
 import logging
 import os
 import pickle
 import sys
 from config import Config, db_generator
+import pandas as pd
 
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
-import pandas as pd
-from sqlalchemy.exc import ProgrammingError
 
 from api import (
     Courses,
@@ -77,24 +74,6 @@ def get_credentials():
     return creds
 
 
-def get_values_and_write_to_db(
-    sql, endpoint, table_name, if_exists="replace", course_ids=[]
-):
-    if len(course_ids) > 0:
-        endpoint.get_by_course(course_ids)
-    else:
-        endpoint.get()
-    endpoint_df = endpoint.to_df()
-    write_df_to_db(sql, endpoint_df, table_name, if_exists)
-
-
-def write_df_to_db(sql, dataframe, table_name, if_exists="replace"):
-    full_table_name = "GoogleClassroom_" + table_name
-    logging.info(f"Inserting {len(dataframe)} records into {full_table_name}.")
-    if not dataframe.empty:
-        sql.insert_into(full_table_name, dataframe, if_exists=if_exists)
-
-
 def main(config):
     configure_logging(config)
     creds = get_credentials()
@@ -106,35 +85,26 @@ def main(config):
     # Get usage
     if config.PULL_USAGE:
         # First get student org unit
-        org_units = OrgUnits(admin_directory_service)
-        org_units.get()
-        ou_df = org_units.to_df()
-        ou_series = ou_df.loc[ou_df.name == config.STUDENT_ORG_UNIT, "orgUnitId"]
-        ou_id = None if ou_series.empty else ou_series.iloc[0]
+        result = OrgUnits(admin_directory_service, config.STUDENT_ORG_UNIT).get_and_write_to_db(
+            sql, debug=config.DEBUG)
+        ou_id = None if result.empty else result.iloc[0]
 
         # Then get usage
-        student_usage = StudentUsage(admin_reports_service, ou_id)
-        get_values_and_write_to_db(
-            sql, student_usage, "StudentUsage", if_exists="append"
-        )
+        StudentUsage(admin_reports_service, ou_id).get_and_write_to_db(
+            sql, overwrite=False, debug=config.DEBUG)
 
     # Get guardians
     if config.PULL_GUARDIANS:
-        guardians = Guardians(classroom_service)
-        get_values_and_write_to_db(sql, guardians, "Guardians")
+        Guardians(classroom_service).get_and_write_to_db(sql, debug=config.DEBUG)
 
     # Get guardian invites
     if config.PULL_GUARDIAN_INVITES:
-        guardian_invites = GuardianInvites(classroom_service)
-        get_values_and_write_to_db(sql, guardian_invites, "GuardianInvites")
+        GuardianInvites(classroom_service).get_and_write_to_db(sql, debug=config.DEBUG)
 
     # Get courses
     if config.PULL_COURSES:
-        courses = Courses(classroom_service)
-        courses.get()
-        courses_df = courses.to_df()
-        courses_df = courses_df[courses_df.updateTime >= config.SCHOOL_YEAR_START]
-        write_df_to_db(sql, courses_df, "Courses", if_exists="replace")
+        Courses(classroom_service, config.SCHOOL_YEAR_START).get_and_write_to_db(
+            sql, debug=config.DEBUG)
 
     # Get list of course ids
     if (
@@ -144,39 +114,28 @@ def main(config):
         or config.PULL_TEACHERS
         or config.PULL_SUBMISSIONS
     ):
-        courses = pd.read_sql_table(
-            "GoogleClassroom_Courses", con=sql.engine, schema=sql.schema
-        )
-        course_ids = courses.id.unique()
+        course_ids = Courses(classroom_service, config.SCHOOL_YEAR_START).get_course_ids(sql)
 
     # Get course topics
     if config.PULL_TOPICS:
-        topics = Topics(classroom_service)
-        get_values_and_write_to_db(sql, topics, "Topics", course_ids=course_ids)
+        Topics(classroom_service).get_and_write_to_db(sql, course_ids, debug=config.DEBUG)
 
     # Get CourseWork
     if config.PULL_COURSEWORK:
-        course_work = CourseWork(classroom_service)
-        get_values_and_write_to_db(
-            sql, course_work, "CourseWork", course_ids=course_ids
-        )
+        CourseWork(classroom_service).get_and_write_to_db(sql, course_ids, debug=config.DEBUG)
 
     # Get students and insert into database
     if config.PULL_STUDENTS:
-        students = Students(classroom_service)
-        get_values_and_write_to_db(sql, students, "Students", course_ids=course_ids)
+        Students(classroom_service).get_and_write_to_db(sql, course_ids, debug=config.DEBUG)
 
     # Get teachers and insert into database
     if config.PULL_TEACHERS:
-        teachers = Teachers(classroom_service)
-        get_values_and_write_to_db(sql, teachers, "Teachers", course_ids=course_ids)
+        Teachers(classroom_service).get_and_write_to_db(sql, course_ids, debug=config.DEBUG)
 
     # Get student coursework submissions
     if config.PULL_SUBMISSIONS:
-        student_submissions = StudentSubmissions(classroom_service)
-        get_values_and_write_to_db(
-            sql, student_submissions, "CourseworkSubmissions", course_ids=course_ids
-        )
+        StudentSubmissions(classroom_service).get_and_write_to_db(
+            sql, course_ids, debug=config.DEBUG)
 
 
 if __name__ == "__main__":
