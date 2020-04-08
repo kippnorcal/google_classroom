@@ -1,4 +1,3 @@
-import argparse
 from contextlib import suppress
 from datetime import datetime, timedelta
 import json
@@ -6,13 +5,13 @@ import logging
 import os
 import pickle
 import sys
+from config import Config, db_generator
 
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 import pandas as pd
 from sqlalchemy.exc import ProgrammingError
-from sqlsorcery import MSSQL
 
 from api import (
     Courses,
@@ -27,39 +26,20 @@ from api import (
     Topics,
 )
 
-parser = argparse.ArgumentParser(description="Pick which ones")
-parser.add_argument("--usage", help="Import student usage data", action="store_true")
-parser.add_argument("--courses", help="Import course lists", action="store_true")
-parser.add_argument("--topics", help="Import course topics", action="store_true")
-parser.add_argument(
-    "--coursework", help="Import course assignments", action="store_true"
-)
-parser.add_argument("--students", help="Import student rosters", action="store_true")
-parser.add_argument("--teachers", help="Import teacher rosters", action="store_true")
-parser.add_argument("--guardians", help="Import student guardians", action="store_true")
-parser.add_argument(
-    "--submissions", help="Import student coursework submissions", action="store_true"
-)
-parser.add_argument(
-    "--invites", help="Import guardian invite statuses", action="store_true"
-)
-parser.add_argument(
-    "--debug", help="Set logging level for troubleshooting", action="store_true"
-)
-args = parser.parse_args()
 
-logging.basicConfig(
-    handlers=[
-        logging.FileHandler(filename="data/app.log", mode="w+"),
-        logging.StreamHandler(sys.stdout),
-    ],
-    level=logging.DEBUG if args.debug else logging.INFO,
-    format="%(asctime)s | %(levelname)s: %(message)s",
-    datefmt="%Y-%m-%d %I:%M:%S%p %Z",
-)
-logging.getLogger("google_auth_oauthlib").setLevel(logging.ERROR)
-logging.getLogger("googleapiclient").setLevel(logging.ERROR)
-logging.getLogger("google").setLevel(logging.ERROR)
+def configure_logging(config):
+    logging.basicConfig(
+        handlers=[
+            logging.FileHandler(filename="data/app.log", mode="w+"),
+            logging.StreamHandler(sys.stdout),
+        ],
+        level=logging.DEBUG if config.DEBUG else logging.INFO,
+        format="%(asctime)s | %(levelname)s: %(message)s",
+        datefmt="%Y-%m-%d %I:%M:%S%p %Z",
+    )
+    logging.getLogger("google_auth_oauthlib").setLevel(logging.ERROR)
+    logging.getLogger("googleapiclient").setLevel(logging.ERROR)
+    logging.getLogger("google").setLevel(logging.ERROR)
 
 
 def get_credentials():
@@ -115,20 +95,21 @@ def write_df_to_db(sql, dataframe, table_name, if_exists="replace"):
         sql.insert_into(full_table_name, dataframe, if_exists=if_exists)
 
 
-def main():
+def main(config):
+    configure_logging(config)
     creds = get_credentials()
     classroom_service = build("classroom", "v1", credentials=creds)
     admin_reports_service = build("admin", "reports_v1", credentials=creds)
     admin_directory_service = build("admin", "directory_v1", credentials=creds)
-    sql = MSSQL()
+    sql = db_generator(config)
 
     # Get usage
-    if args.usage:
+    if config.PULL_USAGE:
         # First get student org unit
         org_units = OrgUnits(admin_directory_service)
         org_units.get()
         ou_df = org_units.to_df()
-        ou_series = ou_df.loc[ou_df.name == os.getenv("STUDENT_ORG_UNIT"), "orgUnitId"]
+        ou_series = ou_df.loc[ou_df.name == config.STUDENT_ORG_UNIT, "orgUnitId"]
         ou_id = None if ou_series.empty else ou_series.iloc[0]
 
         # Then get usage
@@ -138,30 +119,30 @@ def main():
         )
 
     # Get guardians
-    if args.guardians:
+    if config.PULL_GUARDIANS:
         guardians = Guardians(classroom_service)
         get_values_and_write_to_db(sql, guardians, "Guardians")
 
     # Get guardian invites
-    if args.invites:
+    if config.PULL_GUARDIAN_INVITES:
         guardian_invites = GuardianInvites(classroom_service)
         get_values_and_write_to_db(sql, guardian_invites, "GuardianInvites")
 
     # Get courses
-    if args.courses:
+    if config.PULL_COURSES:
         courses = Courses(classroom_service)
         courses.get()
         courses_df = courses.to_df()
-        courses_df = courses_df[courses_df.updateTime >= os.getenv("SCHOOL_YEAR_START")]
+        courses_df = courses_df[courses_df.updateTime >= config.SCHOOL_YEAR_START]
         write_df_to_db(sql, courses_df, "Courses", if_exists="replace")
 
     # Get list of course ids
     if (
-        args.topics
-        or args.coursework
-        or args.students
-        or args.teachers
-        or args.submissions
+        config.PULL_TOPICS
+        or config.PULL_COURSEWORK
+        or config.PULL_STUDENTS
+        or config.PULL_TEACHERS
+        or config.PULL_SUBMISSIONS
     ):
         courses = pd.read_sql_table(
             "GoogleClassroom_Courses", con=sql.engine, schema=sql.schema
@@ -169,29 +150,29 @@ def main():
         course_ids = courses.id.unique()
 
     # Get course topics
-    if args.topics:
+    if config.PULL_TOPICS:
         topics = Topics(classroom_service)
         get_values_and_write_to_db(sql, topics, "Topics", course_ids=course_ids)
 
     # Get CourseWork
-    if args.coursework:
+    if config.PULL_COURSEWORK:
         course_work = CourseWork(classroom_service)
         get_values_and_write_to_db(
             sql, course_work, "CourseWork", course_ids=course_ids
         )
 
     # Get students and insert into database
-    if args.students:
+    if config.PULL_STUDENTS:
         students = Students(classroom_service)
         get_values_and_write_to_db(sql, students, "Students", course_ids=course_ids)
 
     # Get teachers and insert into database
-    if args.teachers:
+    if config.PULL_TEACHERS:
         teachers = Teachers(classroom_service)
         get_values_and_write_to_db(sql, teachers, "Teachers", course_ids=course_ids)
 
     # Get student coursework submissions
-    if args.submissions:
+    if config.PULL_SUBMISSIONS:
         student_submissions = StudentSubmissions(classroom_service)
         get_values_and_write_to_db(
             sql, student_submissions, "CourseworkSubmissions", course_ids=course_ids
@@ -199,4 +180,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(Config)
