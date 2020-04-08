@@ -49,6 +49,16 @@ PULL_GUARDIANS=
 PULL_SUBMISSIONS=
 PULL_GUARDIAN_INVITES=
 
+# Email notification variables
+# OPTIONAL: Set DISABLE_MAILER to "YES" if you do not want email notifications to be sent.
+DISABLE_MAILER=
+SENDER_EMAIL=
+SENDER_PWD=
+RECIPIENT_EMAIL=
+# If using a standard Gmail account you can set these to smtp.gmail.com on port 465
+EMAIL_SERVER=
+EMAIL_PORT=
+
 # Google API variables
 STUDENT_ORG_UNIT=name of the student org unit
 
