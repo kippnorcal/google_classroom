@@ -3,14 +3,12 @@ import logging
 import os
 import pickle
 import sys
-from config import Config, db_generator
-import pandas as pd
 import traceback
-from mailer import Mailer
 
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+import pandas as pd
 
 from api import (
     Courses,
@@ -24,6 +22,8 @@ from api import (
     Teachers,
     Topics,
 )
+from config import Config, db_generator
+from mailer import Mailer
 
 
 def configure_logging(config):
