@@ -103,9 +103,7 @@ def main(config):
 
     # Get guardian invites
     if config.PULL_GUARDIAN_INVITES:
-        GuardianInvites(classroom_service).get_and_write_to_db(
-            sql, debug=config.DEBUG
-        )
+        GuardianInvites(classroom_service).get_and_write_to_db(sql, debug=config.DEBUG)
 
     # Get courses
     if config.PULL_COURSES:
@@ -155,12 +153,16 @@ def main(config):
             sql, course_ids, debug=config.DEBUG
         )
 
-        
+
 if __name__ == "__main__":
     try:
         main(Config)
-        Mailer("Google Classroom Connector").notify()
-     except Exception as e:
+        if not Config.DISABLE_MAILER:
+            Mailer(Config, "Google Classroom Connector").notify()
+    except Exception as e:
         logging.exception(e)
         stack_trace = traceback.format_exc()
-        Mailer("Google Classroom Connector").notify(error=True, message=stack_trace)
+        if not Config.DISABLE_MAILER:
+            Mailer(Config, "Google Classroom Connector").notify(
+                error=True, message=stack_trace
+            )

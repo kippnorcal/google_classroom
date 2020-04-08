@@ -2,7 +2,6 @@ import os
 import email
 import smtplib
 import ssl
-from config import Config
 
 from email import encoders
 from email.mime.base import MIMEBase
@@ -11,14 +10,14 @@ from email.mime.text import MIMEText
 
 
 class Mailer:
-    def __init__(self, jobname):
+    def __init__(self, config, jobname):
         self.jobname = jobname
-        self.user = Config.SENDER_EMAIL
-        self.password = Config.SENDER_PWD
-        self.to_email = Config.RECIPIENT_EMAIL
+        self.user = config.SENDER_EMAIL
+        self.password = config.SENDER_PWD
+        self.to_email = config.RECIPIENT_EMAIL
         context = ssl.create_default_context()
         self.server = smtplib.SMTP_SSL(
-            Config.EMAIL_SERVER, Config.EMAIL_PORT, context=context
+            config.EMAIL_SERVER, config.EMAIL_PORT, context=context
         )
 
     def _subject_line(self):

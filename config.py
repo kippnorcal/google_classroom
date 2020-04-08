@@ -60,6 +60,7 @@ class Config(object):
     EMAIL_SERVER = os.getenv("EMAIL_SERVER")
     EMAIL_PORT = os.getenv("EMAIL_PORT")
     RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL")
+    DISABLE_MAILER = os.getenv("DISABLE_MAILER") == "YES"
 
 
 class Test_Config(Config):
@@ -74,6 +75,7 @@ class Test_Config(Config):
     PULL_GUARDIANS = True
     PULL_SUBMISSIONS = True
     PULL_GUARDIAN_INVITES = True
+    DISABLE_MAILER = True
 
 
 def db_generator(config):
