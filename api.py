@@ -79,8 +79,12 @@ class EndPoint:
         # In cases where everything is overwritten, drop the table first.
         # Dropping rather than truncating allows for easy schema changes without migrating.
         if overwrite:
-            table = sql.table(self.table_name)
-            sql.engine.execute(DropTable(table))
+            try:
+                # Try/catch in case table doesn't exist.
+                table = sql.table(self.table_name)
+                sql.engine.execute(DropTable(table))
+            except:
+                pass
 
         if debug:
             self._delete_local_file()
@@ -359,7 +363,7 @@ class CourseWork(EndPoint):
         )
 
 
-class CourseworkSubmissions(EndPoint):
+class StudentSubmissions(EndPoint):
     def __init__(self, service):
         super().__init__(service)
         self.date_columns = ["creationTime", "updateTime"]

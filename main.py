@@ -17,7 +17,7 @@ from api import (
     Guardians,
     OrgUnits,
     Students,
-    CourseworkSubmissions,
+    StudentSubmissions,
     StudentUsage,
     Teachers,
     Topics,
@@ -134,7 +134,7 @@ def main(config):
 
     # Get student coursework submissions
     if config.PULL_SUBMISSIONS:
-        CourseworkSubmissions(classroom_service).get_and_write_to_db(
+        StudentSubmissions(classroom_service).get_and_write_to_db(
             sql, course_ids, debug=config.DEBUG)
 
 
