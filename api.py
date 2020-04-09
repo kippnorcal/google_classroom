@@ -126,7 +126,7 @@ class EndPoint:
                     #  Process the records and write them to a database.
                     df = self._process_and_filter_records(records)
                     self._write_to_db(sql, df)
-                    all_data = all_data.append(df)
+                    all_data = all_data.append(df) if not all_data.empty else df
         return all_data
 
 
