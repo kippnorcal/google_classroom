@@ -7,17 +7,31 @@ from sqlsorcery import MSSQL, PostgreSQL, SQLite
 
 def get_args():
     parser = argparse.ArgumentParser(description="Pick which ones")
-    parser.add_argument("--usage", help="Import student usage data", action="store_true")
+    parser.add_argument(
+        "--usage", help="Import student usage data", action="store_true"
+    )
     parser.add_argument("--courses", help="Import course lists", action="store_true")
     parser.add_argument("--topics", help="Import course topics", action="store_true")
-    parser.add_argument("--coursework", help="Import course assignments", action="store_true")
-    parser.add_argument("--students", help="Import student rosters", action="store_true")
-    parser.add_argument("--teachers", help="Import teacher rosters", action="store_true")
-    parser.add_argument("--guardians", help="Import student guardians", action="store_true")
     parser.add_argument(
-        "--submissions", help="Import student coursework submissions", action="store_true"
+        "--coursework", help="Import course assignments", action="store_true"
     )
-    parser.add_argument("--invites", help="Import guardian invite statuses", action="store_true")
+    parser.add_argument(
+        "--students", help="Import student rosters", action="store_true"
+    )
+    parser.add_argument(
+        "--teachers", help="Import teacher rosters", action="store_true"
+    )
+    parser.add_argument(
+        "--guardians", help="Import student guardians", action="store_true"
+    )
+    parser.add_argument(
+        "--submissions",
+        help="Import student coursework submissions",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--invites", help="Import guardian invite statuses", action="store_true"
+    )
     parser.add_argument(
         "--debug", help="Set logging level for troubleshooting", action="store_true"
     )
@@ -26,6 +40,7 @@ def get_args():
 
 class Config(object):
     """Base configuration object"""
+
     args = get_args()
     STUDENT_ORG_UNIT = os.getenv("STUDENT_ORG_UNIT")
     SCHOOL_YEAR_START = os.getenv("SCHOOL_YEAR_START")
@@ -40,6 +55,12 @@ class Config(object):
     PULL_GUARDIANS = os.getenv("PULL_GUARDIANS") == "YES" or args.guardians
     PULL_SUBMISSIONS = os.getenv("PULL_SUBMISSIONS") == "YES" or args.submissions
     PULL_GUARDIAN_INVITES = os.getenv("PULL_GUARDIAN_INVITES") == "YES" or args.invites
+    SENDER_EMAIL = os.getenv("SENDER_EMAIL")
+    SENDER_PWD = os.getenv("SENDER_PWD")
+    EMAIL_SERVER = os.getenv("EMAIL_SERVER")
+    EMAIL_PORT = os.getenv("EMAIL_PORT")
+    RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL")
+    DISABLE_MAILER = os.getenv("DISABLE_MAILER") == "YES"
 
 
 class Test_Config(Config):
@@ -54,6 +75,7 @@ class Test_Config(Config):
     PULL_GUARDIANS = True
     PULL_SUBMISSIONS = True
     PULL_GUARDIAN_INVITES = True
+    DISABLE_MAILER = True
 
 
 def db_generator(config):

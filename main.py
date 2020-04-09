@@ -3,12 +3,12 @@ import logging
 import os
 import pickle
 import sys
-from config import Config, db_generator
-import pandas as pd
+import traceback
 
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+import pandas as pd
 
 from api import (
     Courses,
@@ -22,6 +22,8 @@ from api import (
     Teachers,
     Topics,
 )
+from config import Config, db_generator
+from mailer import Mailer
 
 
 def configure_logging(config):
@@ -85,13 +87,15 @@ def main(config):
     # Get usage
     if config.PULL_USAGE:
         # First get student org unit
-        result = OrgUnits(admin_directory_service, config.STUDENT_ORG_UNIT).get_and_write_to_db(
-            sql, debug=config.DEBUG)
+        result = OrgUnits(
+            admin_directory_service, config.STUDENT_ORG_UNIT
+        ).get_and_write_to_db(sql, debug=config.DEBUG)
         ou_id = None if result.empty else result.iloc[0]
 
         # Then get usage
         StudentUsage(admin_reports_service, ou_id).get_and_write_to_db(
-            sql, overwrite=False, debug=config.DEBUG)
+            sql, overwrite=False, debug=config.DEBUG
+        )
 
     # Get guardians
     if config.PULL_GUARDIANS:
@@ -104,7 +108,8 @@ def main(config):
     # Get courses
     if config.PULL_COURSES:
         Courses(classroom_service, config.SCHOOL_YEAR_START).get_and_write_to_db(
-            sql, debug=config.DEBUG)
+            sql, debug=config.DEBUG
+        )
 
     # Get list of course ids
     if (
@@ -114,29 +119,47 @@ def main(config):
         or config.PULL_TEACHERS
         or config.PULL_SUBMISSIONS
     ):
-        course_ids = Courses(classroom_service, config.SCHOOL_YEAR_START).get_course_ids(sql)
+        course_ids = Courses(
+            classroom_service, config.SCHOOL_YEAR_START
+        ).get_course_ids(sql)
 
     # Get course topics
     if config.PULL_TOPICS:
-        Topics(classroom_service).get_and_write_to_db(sql, course_ids, debug=config.DEBUG)
+        Topics(classroom_service).get_and_write_to_db(
+            sql, course_ids, debug=config.DEBUG
+        )
 
     # Get CourseWork
     if config.PULL_COURSEWORK:
-        CourseWork(classroom_service).get_and_write_to_db(sql, course_ids, debug=config.DEBUG)
+        CourseWork(classroom_service).get_and_write_to_db(
+            sql, course_ids, debug=config.DEBUG
+        )
 
     # Get students and insert into database
     if config.PULL_STUDENTS:
-        Students(classroom_service).get_and_write_to_db(sql, course_ids, debug=config.DEBUG)
+        Students(classroom_service).get_and_write_to_db(
+            sql, course_ids, debug=config.DEBUG
+        )
 
     # Get teachers and insert into database
     if config.PULL_TEACHERS:
-        Teachers(classroom_service).get_and_write_to_db(sql, course_ids, debug=config.DEBUG)
+        Teachers(classroom_service).get_and_write_to_db(
+            sql, course_ids, debug=config.DEBUG
+        )
 
     # Get student coursework submissions
     if config.PULL_SUBMISSIONS:
         StudentSubmissions(classroom_service).get_and_write_to_db(
-            sql, course_ids, debug=config.DEBUG)
+            sql, course_ids, debug=config.DEBUG
+        )
 
 
 if __name__ == "__main__":
-    main(Config)
+    try:
+        main(Config)
+        error_message = None
+    except Exception as e:
+        logging.exception(e)
+        error_message = traceback.format_exc()
+    if not Config.DISABLE_MAILER:
+        Mailer(Config, "Google Classroom Connector").notify(error_message=error_message)
