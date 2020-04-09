@@ -157,12 +157,9 @@ def main(config):
 if __name__ == "__main__":
     try:
         main(Config)
-        if not Config.DISABLE_MAILER:
-            Mailer(Config, "Google Classroom Connector").notify()
+        error_message = None
     except Exception as e:
         logging.exception(e)
-        stack_trace = traceback.format_exc()
-        if not Config.DISABLE_MAILER:
-            Mailer(Config, "Google Classroom Connector").notify(
-                error=True, message=stack_trace
-            )
+        error_message = traceback.format_exc()
+    if not Config.DISABLE_MAILER:
+        Mailer(Config, "Google Classroom Connector").notify(error_message=error_message)
