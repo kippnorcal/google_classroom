@@ -20,6 +20,7 @@ class EndPoint:
         self.columns = []
         self.date_columns = []
         self.course_id = None
+        self.date = None
         self.request_key = None
         self.table_name = f"GoogleClassroom_{self.classname()}"
 
@@ -61,72 +62,99 @@ class EndPoint:
         sql.insert_into(self.table_name, df)
 
     def _delete_local_file(self):
+        """Deletes the local debug json file in /data."""
         if os.path.exists(self.filename):
             os.remove(self.filename)
 
     def _write_json_to_file(self, json_data):
+        """Writes the json data to a debug file in /data."""
         mode = "a" if os.path.exists(self.filename) else "w"
         with open(self.filename, mode) as file:
             file.seek(0)
             json.dump(json_data, file)
 
+    def _drop_table(self, sql):
+        """
+        Deletes the connected table related to this class.
+        Drops rather than truncates to allow for easy schema changes without migrating.
+        """
+        try:
+            table = sql.table(self.table_name)
+            sql.engine.execute(DropTable(table))
+        except:
+            # Errors when the table doesn't exist.
+            pass
+
     @retry(
         stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
     )
     @elapsed
-    def get_and_write_to_db(self, sql, course_ids=[None], overwrite=True, debug=True):
-        """Execute API request and write results to json file."""
+    def get_and_write_to_db(self, sql, course_ids=[None], dates=[None], overwrite=True, debug=True):
+        """
+        Executes the API request, writing results as they come in to the DB, and returning the 
+        cumulative results.
+
+        Parameters:
+            sql: A sqlsorcery object.
+            course_ids: (optional) A list of course ides to iterate through for each request.
+            dates: (optional) A list of dates to iterate through for each request.
+            overwite: (optional) If True, drops and overwrites the existing database.
+            debug: (optional): If True, also writes raw debug json results to file.
+
+        Returns:
+            all_data: the results of the request.
+        """
         # In cases where everything is overwritten, drop the table first.
-        # Dropping rather than truncating allows for easy schema changes without migrating.
         if overwrite:
-            try:
-                # Try/catch in case table doesn't exist.
-                table = sql.table(self.table_name)
-                sql.engine.execute(DropTable(table))
-            except:
-                pass
+            self._drop_table(sql)
 
         if debug:
+            # Local files are only written when in debug mode, so cleans out old files.
             self._delete_local_file()
 
         # Keep track of data cumulatively so that it can be returned at the end.
         all_data = pd.DataFrame()
 
-        # For some endpoints, each course must be requested separately.
-        # TODO: Batch course requests together to speed up processing.
+        # For some endpoints, each course and each day must be requested separately.
+        # TODO: Batch course and date requests together to speed up processing.
         for idx, course_id in enumerate(course_ids):
             logging.info(f"{self.classname()}: processing course {idx + 1}/{len(course_ids)}")
             self.course_id = course_id
-            self.next_page_token = ""
-            count = 1
-            while self.next_page_token is not None:
-                try:
-                    results = self.request_data().execute()
-                except HttpError as error:
-                    # Currently this can happen with StudentUsage when the date is too recent.
-                    logging.debug(error)
-                    return pd.DataFrame()
+            for idx2, date in enumerate(dates):
+                if date:
+                    logging.info(f"{self.classname()}: processing {date}, {idx2 + 1}/{len(dates)}")
+                self.date = date
+                self.next_page_token = ""
+                count = 1
+                while self.next_page_token is not None:
+                    try:
+                        results = self.request_data().execute()
+                    except HttpError as error:
+                        # Currently this can happen with StudentUsage when the date is too recent.
+                        logging.debug(error)
+                        self.next_page_token = None
+                        continue
 
-                if "warnings" in results:
-                    # Examples of warnings include partial data availability in StudentUsage.
-                    for warning in results["warnings"]:
-                        logging.debug(f"{warning['code']}: {warning['message']}")
+                    if "warnings" in results:
+                        # Examples of warnings include partial data availability in StudentUsage.
+                        for warning in results["warnings"]:
+                            logging.debug(f"{warning['code']}: {warning['message']}")
 
-                records = results.get(self.request_key, [])
-                logging.info(
-                    f"{self.classname()}: retrieved {len(records)} records from page {count}")
-                count += 1
-                self.next_page_token = results.get("nextPageToken", None)
+                    records = results.get(self.request_key, [])
+                    logging.info(
+                        f"{self.classname()}: retrieved {len(records)} records from page {count}")
+                    count += 1
+                    self.next_page_token = results.get("nextPageToken", None)
 
-                if len(records) > 0:
-                    if debug:
-                        # Log results to a text file for audit purposes
-                        self._write_json_to_file(records)
+                    if len(records) > 0:
+                        if debug:
+                            # Log results to a text file for audit purposes
+                            self._write_json_to_file(records)
 
-                    #  Process the records and write them to a database.
-                    df = self._process_and_filter_records(records)
-                    self._write_to_db(sql, df)
-                    all_data = all_data.append(df) if not all_data.empty else df
+                        #  Process the records and write them to a database.
+                        df = self._process_and_filter_records(records)
+                        self._write_to_db(sql, df)
+                        all_data = all_data.append(df) if not all_data.empty else df
         return all_data
 
 
@@ -151,19 +179,29 @@ class StudentUsage(EndPoint):
         super().__init__(service)
         self.date_columns = ["AsOfDate", "LastUsedTime"]
         self.columns = ["Email", "AsOfDate", "LastUsedTime"]
-        self.two_days_ago = (datetime.today() - timedelta(days=2)).strftime("%Y-%m-%d")
         self.org_unit_id = org_unit_id
         self.request_key = "usageReports"
 
+    def get_last_date(self, sql):
+        """Gets the last available date of data in the database."""
+        try:
+            usage = pd.read_sql_table(self.table_name, con=sql.engine, schema=sql.schema)
+            return usage.AsOfDate.max() if usage.AsOfDate.count() > 0 else None
+        except:
+            return None
+
+    def remove_dates_after(self, sql, date):
+        """Removes the given date and any after from the database."""
+        logging.debug(f"Deleting usage during and after {date} from {self.table_name}.")
+        table = sql.table(self.table_name)
+        query = table.delete().where(table.c.AsOfDate >= date)
+        sql.engine.execute(query)
+
     def request_data(self):
         """Request all usage for the given org unit."""
-        # TODO: This should use the last date already in the database and request all data from that
-        #       date onwards. This is because partial data can come through on a given day, and
-        #       there is no indication that a day was incomplete. This allows for idempotence while
-        #       not dropping tables like the other classes.
         options = {
             "userKey": "all",
-            "date": self.two_days_ago,
+            "date": self.date,
             "pageToken": self.next_page_token,
         }
         if self.org_unit_id:
