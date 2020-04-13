@@ -6,6 +6,7 @@ from googleapiclient.http import HttpError
 import pandas as pd
 from tenacity import retry, stop_after_attempt, wait_exponential
 from sqlalchemy.schema import DropTable
+from sqlalchemy.exc import NoSuchTableError
 from timer import elapsed
 
 
@@ -81,9 +82,8 @@ class EndPoint:
         try:
             table = sql.table(self.table_name)
             sql.engine.execute(DropTable(table))
-        except:
-            # Errors when the table doesn't exist.
-            pass
+        except NoSuchTableError as error:
+            logging.debug(f"{error}: Attempted deletion, but no table exists.")
 
     @retry(
         stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
