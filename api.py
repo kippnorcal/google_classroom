@@ -192,7 +192,7 @@ class StudentUsage(EndPoint):
 
     def remove_dates_after(self, sql, date):
         """Removes the given date and any after from the database."""
-        logging.debug(f"Deleting usage during and after {date} from {self.table_name}.")
+        logging.info(f"Deleting usage during and after {date} from {self.table_name}.")
         table = sql.table(self.table_name)
         query = table.delete().where(table.c.AsOfDate >= date)
         sql.engine.execute(query)
