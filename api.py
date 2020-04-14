@@ -59,7 +59,9 @@ class EndPoint:
 
     def _write_to_db(self, sql, df):
         """Writes the data into the related table"""
-        logging.info(f"{self.classname()}: inserting {len(df)} records into {self.table_name}.")
+        logging.info(
+            f"{self.classname()}: inserting {len(df)} records into {self.table_name}."
+        )
         sql.insert_into(self.table_name, df)
 
     def _delete_local_file(self):
@@ -89,7 +91,9 @@ class EndPoint:
         stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
     )
     @elapsed
-    def get_and_write_to_db(self, sql, course_ids=[None], dates=[None], overwrite=True, debug=True):
+    def get_and_write_to_db(
+        self, sql, course_ids=[None], dates=[None], overwrite=True, debug=True
+    ):
         """
         Executes the API request, writing results as they come in to the DB, and returning the 
         cumulative results.
@@ -118,11 +122,15 @@ class EndPoint:
         # For some endpoints, each course and each day must be requested separately.
         # TODO: Batch course and date requests together to speed up processing.
         for idx, course_id in enumerate(course_ids):
-            logging.info(f"{self.classname()}: processing course {idx + 1}/{len(course_ids)}")
+            logging.info(
+                f"{self.classname()}: processing course {idx + 1}/{len(course_ids)}"
+            )
             self.course_id = course_id
             for idx2, date in enumerate(dates):
                 if date:
-                    logging.info(f"{self.classname()}: processing {date}, {idx2 + 1}/{len(dates)}")
+                    logging.info(
+                        f"{self.classname()}: processing {date}, {idx2 + 1}/{len(dates)}"
+                    )
                 self.date = date
                 self.next_page_token = ""
                 count = 1
@@ -142,7 +150,8 @@ class EndPoint:
 
                     records = results.get(self.request_key, [])
                     logging.info(
-                        f"{self.classname()}: retrieved {len(records)} records from page {count}")
+                        f"{self.classname()}: retrieved {len(records)} records from page {count}"
+                    )
                     count += 1
                     self.next_page_token = results.get("nextPageToken", None)
 
@@ -185,7 +194,9 @@ class StudentUsage(EndPoint):
     def get_last_date(self, sql):
         """Gets the last available date of data in the database."""
         try:
-            usage = pd.read_sql_table(self.table_name, con=sql.engine, schema=sql.schema)
+            usage = pd.read_sql_table(
+                self.table_name, con=sql.engine, schema=sql.schema
+            )
             return usage.AsOfDate.max() if usage.AsOfDate.count() > 0 else None
         except:
             return None
@@ -404,7 +415,15 @@ class CourseWork(EndPoint):
 class StudentSubmissions(EndPoint):
     def __init__(self, service):
         super().__init__(service)
-        self.date_columns = ["creationTime", "updateTime"]
+        self.date_columns = [
+            "creationTime",
+            "updateTime",
+            "createdTime",
+            "turnedInTimestamp",
+            "returnedTimestamp",
+            "draftGradeTimestamp",
+            "assignedGradeTimestamp",
+        ]
         self.columns = [
             "courseId",
             "courseWorkId",
@@ -434,7 +453,11 @@ class StudentSubmissions(EndPoint):
             self.service.courses()
             .courseWork()
             .studentSubmissions()
-            .list(courseId=self.course_id, courseWorkId="-")
+            .list(
+                pageToken=self.next_page_token,
+                courseId=self.course_id,
+                courseWorkId="-",
+            )
         )
 
     def _parse_statehistory(self, record, parsed):
