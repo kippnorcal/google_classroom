@@ -6,7 +6,7 @@ from googleapiclient.http import HttpError
 import pandas as pd
 from tenacity import retry, stop_after_attempt, wait_exponential
 from sqlalchemy.schema import DropTable
-from sqlalchemy.exc import NoSuchTableError
+from sqlalchemy.exc import NoSuchTableError, InvalidRequestError
 from timer import elapsed
 
 
@@ -307,8 +307,14 @@ class Courses(EndPoint):
         self.school_year_start = school_year_start
 
     def get_course_ids(self, sql):
-        courses = pd.read_sql_table(self.table_name, con=sql.engine, schema=sql.schema)
-        return courses.id.unique()
+        try:
+            courses = pd.read_sql_table(
+                self.table_name, con=sql.engine, schema=sql.schema
+            )
+            return courses.id.unique()
+        except InvalidRequestError as error:
+            logging.info(error)
+            return None
 
     def request_data(self):
         """Request all active courses."""
