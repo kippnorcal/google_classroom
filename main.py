@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging
 import os
 import pickle
@@ -93,9 +93,15 @@ def main(config):
         ou_id = None if result.empty else result.iloc[0]
 
         # Then get usage
-        StudentUsage(admin_reports_service, ou_id).get_and_write_to_db(
-            sql, overwrite=False, debug=config.DEBUG
-        )
+        # Clear out the last day's worth of data, because it may only be partially complete.
+        # Then load data on all dates from that day until today.
+        usage = StudentUsage(admin_reports_service, ou_id)
+        last_date = usage.get_last_date(sql)
+        if last_date:
+            usage.remove_dates_after(sql, last_date)
+        start_date = last_date or datetime.strptime(config.SCHOOL_YEAR_START, "%Y-%m-%d")
+        date_range = pd.date_range(start=start_date, end=datetime.today()).strftime("%Y-%m-%d")
+        usage.get_and_write_to_db(sql, dates=date_range, overwrite=False, debug=config.DEBUG)
 
     # Get guardians
     if config.PULL_GUARDIANS:
