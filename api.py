@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 import itertools
 import json
 import logging
+import math
 import os
 from googleapiclient.http import HttpError
 import pandas as pd
@@ -16,8 +17,10 @@ class EndPoint:
     def classname(cls):
         return cls.__name__
 
-    def __init__(self, service):
+    def __init__(self, service, sql, config):
         self.service = service
+        self.sql = sql
+        self.config = config
         self.filename = f"data/{self.classname().lower()}.json"
         self.columns = []
         self.date_columns = []
@@ -56,12 +59,12 @@ class EndPoint:
             df = df.astype(date_types)
         return df
 
-    def _write_to_db(self, sql, df):
+    def _write_to_db(self, df):
         """Writes the data into the related table"""
-        logging.info(
+        logging.debug(
             f"{self.classname()}: inserting {len(df)} records into {self.table_name}."
         )
-        sql.insert_into(self.table_name, df)
+        self.sql.insert_into(self.table_name, df)
 
     def _delete_local_file(self):
         """Deletes the local debug json file in /data."""
@@ -75,14 +78,14 @@ class EndPoint:
             file.seek(0)
             json.dump(json_data, file)
 
-    def _drop_table(self, sql):
+    def _drop_table(self):
         """
         Deletes the connected table related to this class.
         Drops rather than truncates to allow for easy schema changes without migrating.
         """
         try:
-            table = sql.table(self.table_name)
-            sql.engine.execute(DropTable(table))
+            table = self.sql.table(self.table_name)
+            self.sql.engine.execute(DropTable(table))
         except NoSuchTableError as error:
             logging.debug(f"{error}: Attempted deletion, but no table exists.")
 
@@ -106,27 +109,23 @@ class EndPoint:
         stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
     )
     @elapsed
-    def batch_pull_data(
-        self, sql, course_ids=[None], dates=[None], overwrite=True, debug=True
-    ):
+    def batch_pull_data(self, course_ids=[None], dates=[None], overwrite=True):
         """
         Executes the API request in batches based on the courses and dates, writing
         results as they come in to the DB, and returning the cumulative results.
 
         Parameters:
-            sql:        A sqlsorcery object.
             course_ids: A list of courses that will each get a separate request.
             dates:      A list of dates that will each get a separate request.
             overwite:   If True, drops and overwrites the existing database.
-            debug:      If True, also writes raw debug json results to file.
 
         Returns:
             all_data:   The results of the request.
         """
         if overwrite:
-            self._drop_table(sql)
+            self._drop_table()
 
-        if debug:
+        if self.config.DEBUG:
             self._delete_local_file()
 
         all_data = None
@@ -137,7 +136,7 @@ class EndPoint:
             course_id, date, page = request_id.split(";")
 
             if exception:
-                logging.info(exception)
+                logging.debug(exception)
                 return
 
             if "warnings" in response:
@@ -152,28 +151,26 @@ class EndPoint:
                 remaining_requests.append(next_request)
 
             records = response.get(self.request_key, [])
-            logging.info(
+            logging.debug(
                 f"{self.classname()}: received {len(records)} records from course {course_id}, date {date}, page {page}"
             )
             if len(records) > 0:
-                if debug:
+                if self.config.DEBUG:
                     self._write_json_to_file(records)
                 df = self._process_and_filter_records(records)
-                self._write_to_db(sql, df)
+                self._write_to_db(df)
                 nonlocal all_data
                 all_data = df if all_data is None else all_data.append(df)
 
         request_list = list(itertools.product(course_ids, dates))
-        chunk_size = 1000  # The current Google batch size limit
-        for i in range(0, len(request_list), chunk_size):
-            request_chunk = request_list[i : i + chunk_size]
-            course_ids, dates = zip(*request_chunk)
-            course_ids = set(course_ids)
-            dates = set(dates)
+        batch_size = int(self.config.BATCH_SIZE)
+        number_batches = math.ceil(len(request_list) / batch_size)
+        for batch_num, i in enumerate(range(0, len(request_list), batch_size)):
+            request_batch = request_list[i : i + batch_size]
             logging.info(
-                f"{self.classname()}: batch requesting data for courses {course_ids} on dates {dates}"
+                f"{self.classname()}: making {len(request_batch)} requests, batch {batch_num+1}/{number_batches}"
             )
-            for (course_id, date) in request_chunk:
+            for (course_id, date) in request_batch:
                 request = self._generate_request_tuple(course_id, date, str(0), None)
                 remaining_requests.append(request)
 
@@ -183,50 +180,55 @@ class EndPoint:
                     batch.add(request, request_id=request_id)
                 remaining_requests.clear()
                 batch.execute()
+                if len(remaining_requests) > 0:
+                    logging.info(
+                        f"{self.classname()}: Requesting next page for {len(remaining_requests)} requests"
+                    )
 
         return all_data
 
 
 class OrgUnits(EndPoint):
-    def __init__(self, service, student_org_unit=None):
-        super().__init__(service)
+    def __init__(self, service, sql, config):
+        super().__init__(service, sql, config)
         self.date_columns = []
         self.columns = ["name", "description", "orgUnitPath", "orgUnitId"]
         self.request_key = "organizationUnits"
-        self.student_org_unit = student_org_unit
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         """Request org unit that matches the given path"""
         return self.service.orgunits().list(customerId="my_customer")
 
     def filter_data(self, dataframe):
-        return dataframe.loc[dataframe.name == self.student_org_unit, "orgUnitId"]
+        return dataframe.loc[
+            dataframe.name == self.config.STUDENT_ORG_UNIT, "orgUnitId"
+        ]
 
 
 class StudentUsage(EndPoint):
-    def __init__(self, service, org_unit_id):
-        super().__init__(service)
+    def __init__(self, service, sql, config, org_unit_id):
+        super().__init__(service, sql, config)
         self.date_columns = ["AsOfDate", "LastUsedTime"]
         self.columns = ["Email", "AsOfDate", "LastUsedTime"]
         self.org_unit_id = org_unit_id
         self.request_key = "usageReports"
 
-    def get_last_date(self, sql):
+    def get_last_date(self):
         """Gets the last available date of data in the database."""
         try:
             usage = pd.read_sql_table(
-                self.table_name, con=sql.engine, schema=sql.schema
+                self.table_name, con=self.sql.engine, schema=self.sql.schema
             )
             return usage.AsOfDate.max() if usage.AsOfDate.count() > 0 else None
         except:
             return None
 
-    def remove_dates_after(self, sql, date):
+    def remove_dates_after(self, date):
         """Removes the given date and any after from the database."""
-        logging.info(f"Deleting usage during and after {date} from {self.table_name}.")
-        table = sql.table(self.table_name)
+        logging.info(f"Deleting usage after {date} from {self.table_name}.")
+        table = self.sql.table(self.table_name)
         query = table.delete().where(table.c.AsOfDate >= date)
-        sql.engine.execute(query)
+        self.sql.engine.execute(query)
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         """Request all usage for the given org unit."""
@@ -262,8 +264,8 @@ class StudentUsage(EndPoint):
 
 
 class Guardians(EndPoint):
-    def __init__(self, service):
-        super().__init__(service)
+    def __init__(self, service, sql, config):
+        super().__init__(service, sql, config)
         self.date_columns = []
         self.columns = ["studentId", "guardianId", "invitedEmailAddress"]
         self.request_key = "guardians"
@@ -273,13 +275,17 @@ class Guardians(EndPoint):
         return (
             self.service.userProfiles()
             .guardians()
-            .list(studentId="-", pageToken=next_page_token)
+            .list(
+                studentId="-",
+                pageToken=next_page_token,
+                pageSize=self.config.PAGE_SIZE,
+            )
         )
 
 
 class GuardianInvites(EndPoint):
-    def __init__(self, service):
-        super().__init__(service)
+    def __init__(self, service, sql, config):
+        super().__init__(service, sql, config)
         self.date_columns = ["creationTime"]
         self.columns = [
             "studentId",
@@ -299,13 +305,14 @@ class GuardianInvites(EndPoint):
                 studentId="-",
                 states=["PENDING", "COMPLETE"],
                 pageToken=next_page_token,
+                pageSize=self.config.PAGE_SIZE,
             )
         )
 
 
 class Courses(EndPoint):
-    def __init__(self, service, school_year_start):
-        super().__init__(service)
+    def __init__(self, service, sql, config):
+        super().__init__(service, sql, config)
         self.date_columns = ["creationTime", "updateTime"]
         self.columns = [
             "id",
@@ -324,31 +331,32 @@ class Courses(EndPoint):
             "updateTime",
         ]
         self.request_key = "courses"
-        self.school_year_start = school_year_start
 
-    def get_course_ids(self, sql):
+    def get_course_ids(self):
         try:
             courses = pd.read_sql_table(
-                self.table_name, con=sql.engine, schema=sql.schema
+                self.table_name, con=self.sql.engine, schema=self.sql.schema
             )
             return courses.id.unique()
         except InvalidRequestError as error:
-            logging.info(error)
+            logging.debug(error)
             return None
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         """Request all active courses."""
         return self.service.courses().list(
-            pageToken=next_page_token, courseStates=["ACTIVE"]
+            pageToken=next_page_token,
+            courseStates=["ACTIVE"],
+            pageSize=self.config.PAGE_SIZE,
         )
 
     def filter_data(self, dataframe):
-        return dataframe[dataframe.updateTime >= self.school_year_start]
+        return dataframe[dataframe.updateTime >= self.config.SCHOOL_YEAR_START]
 
 
 class Topics(EndPoint):
-    def __init__(self, service):
-        super().__init__(service)
+    def __init__(self, service, sql, config):
+        super().__init__(service, sql, config)
         self.date_columns = ["updateTime"]
         self.columns = ["courseId", "topicId", "name", "updateTime"]
         self.request_key = "topic"
@@ -358,13 +366,17 @@ class Topics(EndPoint):
         return (
             self.service.courses()
             .topics()
-            .list(pageToken=next_page_token, courseId=course_id)
+            .list(
+                pageToken=next_page_token,
+                courseId=course_id,
+                pageSize=self.config.PAGE_SIZE,
+            )
         )
 
 
 class Teachers(EndPoint):
-    def __init__(self, service):
-        super().__init__(service)
+    def __init__(self, service, sql, config):
+        super().__init__(service, sql, config)
         self.columns = [
             "courseId",
             "userId",
@@ -378,13 +390,17 @@ class Teachers(EndPoint):
         return (
             self.service.courses()
             .teachers()
-            .list(pageToken=next_page_token, courseId=course_id)
+            .list(
+                pageToken=next_page_token,
+                courseId=course_id,
+                pageSize=self.config.PAGE_SIZE,
+            )
         )
 
 
 class Students(EndPoint):
-    def __init__(self, service):
-        super().__init__(service)
+    def __init__(self, service, sql, config):
+        super().__init__(service, sql, config)
         self.columns = [
             "courseId",
             "userId",
@@ -398,13 +414,17 @@ class Students(EndPoint):
         return (
             self.service.courses()
             .students()
-            .list(pageToken=next_page_token, courseId=course_id)
+            .list(
+                pageToken=next_page_token,
+                courseId=course_id,
+                pageSize=self.config.PAGE_SIZE,
+            )
         )
 
 
 class CourseWork(EndPoint):
-    def __init__(self, service):
-        super().__init__(service)
+    def __init__(self, service, sql, config):
+        super().__init__(service, sql, config)
         self.date_columns = ["creationTime", "updateTime"]
         self.columns = [
             "courseId",
@@ -434,13 +454,17 @@ class CourseWork(EndPoint):
         return (
             self.service.courses()
             .courseWork()
-            .list(pageToken=next_page_token, courseId=course_id)
+            .list(
+                courseId=course_id,
+                pageSize=self.config.PAGE_SIZE,
+                pageToken=next_page_token,
+            )
         )
 
 
 class StudentSubmissions(EndPoint):
-    def __init__(self, service):
-        super().__init__(service)
+    def __init__(self, service, sql, config):
+        super().__init__(service, sql, config)
         self.date_columns = [
             "creationTime",
             "updateTime",
@@ -479,7 +503,12 @@ class StudentSubmissions(EndPoint):
             self.service.courses()
             .courseWork()
             .studentSubmissions()
-            .list(pageToken=next_page_token, courseId=course_id, courseWorkId="-",)
+            .list(
+                pageToken=next_page_token,
+                courseId=course_id,
+                courseWorkId="-",
+                pageSize=self.config.PAGE_SIZE,
+            )
         )
 
     def _parse_statehistory(self, record, parsed):

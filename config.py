@@ -62,6 +62,8 @@ class Config(object):
     EMAIL_PORT = os.getenv("EMAIL_PORT")
     RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL")
     DISABLE_MAILER = os.getenv("DISABLE_MAILER") == "YES"
+    BATCH_SIZE = os.getenv("BATCH_SIZE") or 500
+    PAGE_SIZE = os.getenv("PAGE_SIZE") or 500
 
 
 class TestConfig(Config):
@@ -80,6 +82,8 @@ class TestConfig(Config):
     SCHOOL_YEAR_START = "2020-01-01"
     SQLITE_FILE = "tests.db"
     STUDENT_ORG_UNIT = "Test Organization 2"
+    BATCH_SIZE = 500
+    PAGE_SIZE = 500
 
 
 def db_generator(config):

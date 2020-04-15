@@ -49,6 +49,10 @@ PULL_GUARDIANS=
 PULL_SUBMISSIONS=
 PULL_GUARDIAN_INVITES=
 
+# Batch parameters. Can be configured and changed to optimize performance.
+BATCH_SIZE=The number of dates or courses to batch at a time. MAX: 1000.
+PAGE_SIZE=The number of items to page at once.
+
 # Email notification variables
 # OPTIONAL: Set DISABLE_MAILER to "YES" if you do not want email notifications to be sent.
 DISABLE_MAILER=
