@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import itertools
 import json
 import logging
 import os
@@ -162,22 +163,26 @@ class EndPoint:
                 nonlocal all_data
                 all_data = df if all_data is None else all_data.append(df)
 
-        logging.info(
-            f"{self.classname()}: requesting data for courses {course_ids} on dates {dates}"
-        )
-        # TODO: This breaks at over 1000 combinations of course and date, which is the
-        # limit of a single batch request. This eventually needs to be handled.
-        for course_id in course_ids:
-            for date in dates:
+        request_list = list(itertools.product(course_ids, dates))
+        chunk_size = 1000  # The current Google batch size limit
+        for i in range(0, len(request_list), chunk_size):
+            request_chunk = request_list[i : i + chunk_size]
+            course_ids, dates = zip(*request_chunk)
+            course_ids = set(course_ids)
+            dates = set(dates)
+            logging.info(
+                f"{self.classname()}: batch requesting data for courses {course_ids} on dates {dates}"
+            )
+            for (course_id, date) in request_chunk:
                 request = self._generate_request_tuple(course_id, date, str(0), None)
                 remaining_requests.append(request)
 
-        while len(remaining_requests) > 0:
-            batch = self.service.new_batch_http_request(callback=callback)
-            for (request, request_id) in remaining_requests:
-                batch.add(request, request_id=request_id)
-            remaining_requests.clear()
-            batch.execute()
+            while len(remaining_requests) > 0:
+                batch = self.service.new_batch_http_request(callback=callback)
+                for (request, request_id) in remaining_requests:
+                    batch.add(request, request_id=request_id)
+                remaining_requests.clear()
+                batch.execute()
 
         return all_data
 
