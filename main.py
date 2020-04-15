@@ -89,7 +89,7 @@ def main(config):
         # First get student org unit
         result = OrgUnits(
             admin_directory_service, config.STUDENT_ORG_UNIT
-        ).get_and_write_to_db(sql, debug=config.DEBUG)
+        ).batch_pull_data(sql, debug=config.DEBUG)
         ou_id = None if result.empty else result.iloc[0]
 
         # Then get usage
@@ -105,21 +105,21 @@ def main(config):
         date_range = pd.date_range(start=start_date, end=datetime.today()).strftime(
             "%Y-%m-%d"
         )
-        usage.get_and_write_to_db(
+        usage.batch_pull_data(
             sql, dates=date_range, overwrite=False, debug=config.DEBUG
         )
 
     # Get guardians
     if config.PULL_GUARDIANS:
-        Guardians(classroom_service).get_and_write_to_db(sql, debug=config.DEBUG)
+        Guardians(classroom_service).batch_pull_data(sql, debug=config.DEBUG)
 
     # Get guardian invites
     if config.PULL_GUARDIAN_INVITES:
-        GuardianInvites(classroom_service).get_and_write_to_db(sql, debug=config.DEBUG)
+        GuardianInvites(classroom_service).batch_pull_data(sql, debug=config.DEBUG)
 
     # Get courses
     if config.PULL_COURSES:
-        Courses(classroom_service, config.SCHOOL_YEAR_START).get_and_write_to_db(
+        Courses(classroom_service, config.SCHOOL_YEAR_START).batch_pull_data(
             sql, debug=config.DEBUG
         )
 
@@ -137,31 +137,25 @@ def main(config):
 
     # Get course topics
     if config.PULL_TOPICS:
-        Topics(classroom_service).get_and_write_to_db(
-            sql, course_ids, debug=config.DEBUG
-        )
+        Topics(classroom_service).batch_pull_data(sql, course_ids, debug=config.DEBUG)
 
     # Get CourseWork
     if config.PULL_COURSEWORK:
-        CourseWork(classroom_service).get_and_write_to_db(
+        CourseWork(classroom_service).batch_pull_data(
             sql, course_ids, debug=config.DEBUG
         )
 
     # Get students and insert into database
     if config.PULL_STUDENTS:
-        Students(classroom_service).get_and_write_to_db(
-            sql, course_ids, debug=config.DEBUG
-        )
+        Students(classroom_service).batch_pull_data(sql, course_ids, debug=config.DEBUG)
 
     # Get teachers and insert into database
     if config.PULL_TEACHERS:
-        Teachers(classroom_service).get_and_write_to_db(
-            sql, course_ids, debug=config.DEBUG
-        )
+        Teachers(classroom_service).batch_pull_data(sql, course_ids, debug=config.DEBUG)
 
     # Get student coursework submissions
     if config.PULL_SUBMISSIONS:
-        StudentSubmissions(classroom_service).get_and_write_to_db(
+        StudentSubmissions(classroom_service).batch_pull_data(
             sql, course_ids, debug=config.DEBUG
         )
 

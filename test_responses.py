@@ -286,6 +286,20 @@ TEACHER_RESPONSE = {
 }
 
 
+class FakeBatchRequest:
+    def __init__(self, callback):
+        self.callback = callback
+        self.requests = []
+
+    def add(self, request, request_id):
+        self.requests.append((request, request_id))
+
+    def execute(self):
+        for (request, request_id) in self.requests:
+            result = request.execute()
+            self.callback(request_id, result, None)
+
+
 class FakeRequest:
     def __init__(self, result, *args, **kwargs):
         self.result = result
@@ -329,6 +343,9 @@ class FakeService:
 
     def orgunits(self):
         return FakeEndpoint(ORG_UNIT_RESPONSE)
+
+    def new_batch_http_request(self, callback):
+        return FakeBatchRequest(callback)
 
     class UserProfiles:
         def guardians(self):

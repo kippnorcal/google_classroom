@@ -66,7 +66,7 @@ class TestEndToEnd:
         )
 
     def generic_get_test(self, endpoint, solution, course_ids=[None]):
-        endpoint.get_and_write_to_db(
+        endpoint.batch_pull_data(
             self.sql, debug=self.config.DEBUG, course_ids=course_ids
         )
         result = pd.read_sql_table(
