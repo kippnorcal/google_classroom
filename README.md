@@ -126,10 +126,19 @@ Use the flag `--debug` to turn on debug logging.
 
 ### Running Tests
 
-Tests are located in tests,py, and can be run with the following command:
+Tests are located in tests,py, and can be run with either of the following commands:
+
+Locally:
 
 ```
-pipenv run py.test tests.py
+pipenv run py.test -s -v tests.py
+```
+
+On Docker:
+
+```
+docker build -t google_classroom .
+docker run --rm -it google_classroom --test
 ```
 
 When making changes, please run tests to make sure you have not broken anything.
