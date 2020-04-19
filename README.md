@@ -124,6 +124,25 @@ Optional flags will include different types of pulls (can also be done via env v
 
 Use the flag `--debug` to turn on debug logging.
 
+### Running Tests
+
+Tests are located in tests,py, and can be run with either of the following commands:
+
+Locally:
+
+```
+pipenv run py.test -s -v tests.py
+```
+
+On Docker:
+
+```
+docker build -t google_classroom .
+docker run --rm -it google_classroom --test
+```
+
+When making changes, please run tests to make sure you have not broken anything.
+
 ### Yearly maintenance
 
 1. Confirm the org unit ID (used to get Student Usage) in the .env.

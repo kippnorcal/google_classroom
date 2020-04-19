@@ -35,7 +35,8 @@ def get_args():
     parser.add_argument(
         "--debug", help="Set logging level for troubleshooting", action="store_true"
     )
-    return parser.parse_args()
+    args, _ = parser.parse_known_args()
+    return args
 
 
 class Config(object):
@@ -63,7 +64,7 @@ class Config(object):
     DISABLE_MAILER = os.getenv("DISABLE_MAILER") == "YES"
 
 
-class Test_Config(Config):
+class TestConfig(Config):
     DB_TYPE = "sqlite"
     DEBUG = False
     PULL_USAGE = True
@@ -76,6 +77,9 @@ class Test_Config(Config):
     PULL_SUBMISSIONS = True
     PULL_GUARDIAN_INVITES = True
     DISABLE_MAILER = True
+    SCHOOL_YEAR_START = "2020-01-01"
+    SQLITE_FILE = "tests.db"
+    STUDENT_ORG_UNIT = "Test Organization 2"
 
 
 def db_generator(config):
@@ -85,6 +89,6 @@ def db_generator(config):
     elif db_type == "postgres":
         return PostgreSQL()
     elif db_type == "sqlite":
-        return SQLite()
+        return SQLite(path=config.SQLITE_FILE)
     else:
         raise Exception()
