@@ -163,10 +163,9 @@ class EndPoint:
                 all_data = df if all_data is None else all_data.append(df)
 
         request_list = list(itertools.product(course_ids, dates))
-        batch_size = int(self.config.BATCH_SIZE)
-        number_batches = math.ceil(len(request_list) / batch_size)
-        for batch_num, i in enumerate(range(0, len(request_list), batch_size)):
-            request_batch = request_list[i : i + batch_size]
+        number_batches = math.ceil(len(request_list) / self.batch_size)
+        for batch_num, i in enumerate(range(0, len(request_list), self.batch_size)):
+            request_batch = request_list[i : i + self.batch_size]
             logging.info(
                 f"{self.classname()}: making {len(request_batch)} requests, batch {batch_num+1}/{number_batches}"
             )
@@ -194,6 +193,7 @@ class OrgUnits(EndPoint):
         self.date_columns = []
         self.columns = ["name", "description", "orgUnitPath", "orgUnitId"]
         self.request_key = "organizationUnits"
+        self.batch_size = config.ORG_UNIT_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         """Request org unit that matches the given path"""
@@ -212,6 +212,7 @@ class StudentUsage(EndPoint):
         self.columns = ["Email", "AsOfDate", "LastUsedTime"]
         self.org_unit_id = org_unit_id
         self.request_key = "usageReports"
+        self.batch_size = config.USAGE_BATCH_SIZE
 
     def get_last_date(self):
         """Gets the last available date of data in the database."""
@@ -269,6 +270,7 @@ class Guardians(EndPoint):
         self.date_columns = []
         self.columns = ["studentId", "guardianId", "invitedEmailAddress"]
         self.request_key = "guardians"
+        self.batch_size = config.GUARDIANS_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         """Request all guardians."""
@@ -295,6 +297,7 @@ class GuardianInvites(EndPoint):
             "creationTime",
         ]
         self.request_key = "guardianInvitations"
+        self.batch_size = config.GUARDIAN_INVITES_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         """Request all pending and complete guardian invites."""
@@ -331,13 +334,14 @@ class Courses(EndPoint):
             "updateTime",
         ]
         self.request_key = "courses"
+        self.batch_size = config.COURSES_BATCH_SIZE
 
     def get_course_ids(self):
         try:
             courses = pd.read_sql_table(
                 self.table_name, con=self.sql.engine, schema=self.sql.schema
             )
-            return courses.id.unique()
+            return sorted(courses.id.unique())
         except InvalidRequestError as error:
             logging.debug(error)
             return None
@@ -360,6 +364,7 @@ class Topics(EndPoint):
         self.date_columns = ["updateTime"]
         self.columns = ["courseId", "topicId", "name", "updateTime"]
         self.request_key = "topic"
+        self.batch_size = config.TOPICS_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         """Request all topics for this course."""
@@ -384,6 +389,7 @@ class Teachers(EndPoint):
             "profile.emailAddress",
         ]
         self.request_key = "teachers"
+        self.batch_size = config.TEACHERS_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         """Request all teachers for this course."""
@@ -408,6 +414,7 @@ class Students(EndPoint):
             "profile.emailAddress",
         ]
         self.request_key = "students"
+        self.batch_size = config.STUDENTS_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         """Request all students for this course."""
@@ -448,6 +455,7 @@ class CourseWork(EndPoint):
             "topicId",
         ]
         self.request_key = "courseWork"
+        self.batch_size = config.COURSEWORK_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         """Request all coursework for this course."""
@@ -496,6 +504,7 @@ class StudentSubmissions(EndPoint):
             "assignedGraderId",
         ]
         self.request_key = "studentSubmissions"
+        self.batch_size = config.SUBMISSIONS_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         """Request all student submissions for this course."""
