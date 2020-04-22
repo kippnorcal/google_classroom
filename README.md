@@ -86,7 +86,8 @@ EMAIL_PORT=
 - Click on "Create Credentials -> Service Account"
 - Create a name for your service account.
 - Select the "Owner" role for the service account.
-- Create a key, saving the result file as `services.json`.
+- Create a key, saving the result file as `service.json`.
+- Check the box for "Enable G Suite Domain-Wide Delegation"
 - Click "Done".
 
 6. Add scopes for the service account.
