@@ -87,41 +87,35 @@ def main(config):
     # Get usage
     if config.PULL_USAGE:
         # First get student org unit
-        result = OrgUnits(
-            admin_directory_service, config.STUDENT_ORG_UNIT
-        ).get_and_write_to_db(sql, debug=config.DEBUG)
+        result = OrgUnits(admin_directory_service, sql, config).batch_pull_data()
         ou_id = None if result.empty else result.iloc[0]
 
         # Then get usage
         # Clear out the last day's worth of data, because it may only be partially
         # complete. Then load data on all dates from that day until today.
-        usage = StudentUsage(admin_reports_service, ou_id)
-        last_date = usage.get_last_date(sql)
+        usage = StudentUsage(admin_reports_service, sql, config, ou_id)
+        last_date = usage.get_last_date()
         if last_date:
-            usage.remove_dates_after(sql, last_date)
+            usage.remove_dates_after(last_date)
         start_date = last_date or datetime.strptime(
             config.SCHOOL_YEAR_START, "%Y-%m-%d"
         )
         date_range = pd.date_range(start=start_date, end=datetime.today()).strftime(
             "%Y-%m-%d"
         )
-        usage.get_and_write_to_db(
-            sql, dates=date_range, overwrite=False, debug=config.DEBUG
-        )
+        usage.batch_pull_data(dates=date_range, overwrite=False)
 
     # Get guardians
     if config.PULL_GUARDIANS:
-        Guardians(classroom_service).get_and_write_to_db(sql, debug=config.DEBUG)
+        Guardians(classroom_service, sql, config).batch_pull_data()
 
     # Get guardian invites
     if config.PULL_GUARDIAN_INVITES:
-        GuardianInvites(classroom_service).get_and_write_to_db(sql, debug=config.DEBUG)
+        GuardianInvites(classroom_service, sql, config).batch_pull_data()
 
     # Get courses
     if config.PULL_COURSES:
-        Courses(classroom_service, config.SCHOOL_YEAR_START).get_and_write_to_db(
-            sql, debug=config.DEBUG
-        )
+        Courses(classroom_service, sql, config).batch_pull_data()
 
     # Get list of course ids
     if (
@@ -131,39 +125,27 @@ def main(config):
         or config.PULL_TEACHERS
         or config.PULL_SUBMISSIONS
     ):
-        course_ids = Courses(
-            classroom_service, config.SCHOOL_YEAR_START
-        ).get_course_ids(sql)
+        course_ids = Courses(classroom_service, sql, config).get_course_ids()
 
     # Get course topics
     if config.PULL_TOPICS:
-        Topics(classroom_service).get_and_write_to_db(
-            sql, course_ids, debug=config.DEBUG
-        )
+        Topics(classroom_service, sql, config).batch_pull_data(course_ids)
 
     # Get CourseWork
     if config.PULL_COURSEWORK:
-        CourseWork(classroom_service).get_and_write_to_db(
-            sql, course_ids, debug=config.DEBUG
-        )
+        CourseWork(classroom_service, sql, config).batch_pull_data(course_ids)
 
     # Get students and insert into database
     if config.PULL_STUDENTS:
-        Students(classroom_service).get_and_write_to_db(
-            sql, course_ids, debug=config.DEBUG
-        )
+        Students(classroom_service, sql, config).batch_pull_data(course_ids)
 
     # Get teachers and insert into database
     if config.PULL_TEACHERS:
-        Teachers(classroom_service).get_and_write_to_db(
-            sql, course_ids, debug=config.DEBUG
-        )
+        Teachers(classroom_service, sql, config).batch_pull_data(course_ids)
 
     # Get student coursework submissions
     if config.PULL_SUBMISSIONS:
-        StudentSubmissions(classroom_service).get_and_write_to_db(
-            sql, course_ids, debug=config.DEBUG
-        )
+        StudentSubmissions(classroom_service, sql, config).batch_pull_data(course_ids)
 
 
 if __name__ == "__main__":
