@@ -19,16 +19,15 @@ git clone https://github.com/kipp-bayarea/google_classroom.git
 2. Install dependencies
 
 - Docker can be installed directly from the website at docker.com.
-- Pipenv can be installed via Pip or Homebrew, and is only needed for local development or to generate an initial token.
 
 3. Create .env file with project secrets
 
-Database variables are configured in the format used by [Sqlsorcery](https://sqlsorcery.readthedocs.io/en/latest/cookbook/environment.html).
-
-STUDENT_ORG_UNIT represents the Google Admin organizational unit that students belong to.
-It will filter student reports to that specific organization.
-
 ```
+# Basic Configuration Info
+ACCOUNT_EMAIL=Email of admin account that will be used to pull data.
+STUDENT_ORG_UNIT=Name of the Google Admin organizational unit for students (optional — filters student reports to that organization)
+SCHOOL_YEAR_START=YYYY-MM-DD
+
 # Database variables
 DB_TYPE=The type of database you are using. Current options: mssql, postgres, sqlite
 DB_SERVER=
@@ -37,7 +36,7 @@ DB_USER=
 DB_PWD=
 DB_SCHEMA=
 
-# OPTIONAL: Data Pulls To Enable. Set to "YES" to include that pull.
+# (Optional) Data Pulls To Enable. Set to "YES" to include that pull.
 # These can be left out in favor of command line arguments.
 PULL_USAGE=
 PULL_COURSES=
@@ -65,7 +64,7 @@ GUARDIAN_INVITES_BATCH_SIZE=
 PAGE_SIZE=The number of items to page at once.
 
 # Email notification variables
-# OPTIONAL: Set DISABLE_MAILER to "YES" if you do not want email notifications to be sent.
+# Set DISABLE_MAILER to "YES" if you do not want email notifications to be sent.
 DISABLE_MAILER=
 SENDER_EMAIL=
 SENDER_PWD=
@@ -73,12 +72,6 @@ RECIPIENT_EMAIL=
 # If using a standard Gmail account you can set these to smtp.gmail.com on port 465
 EMAIL_SERVER=
 EMAIL_PORT=
-
-# Google API variables
-STUDENT_ORG_UNIT=name of the student org unit
-
-# Yearly settings
-SCHOOL_YEAR_START=YYYY-MM-DD
 ```
 
 4. Enable APIs in Developer Console
@@ -87,22 +80,33 @@ SCHOOL_YEAR_START=YYYY-MM-DD
 - Search for Google Classroom, and Enable it.
 - Search for Admin SDK, and Enable it.
 
-5. Generate the `token.pickle` and `credentials.json` files.
+5. Create a service account.
 
-The token and credentials files authenticate the Google user in order to run this application.
+- In the Google Developer Console (console.developers.google.com), go to Credentials.
+- Click on "Create Credentials -> Service Account"
+- Create a name for your service account.
+- Select the "Owner" role for the service account.
+- Create a key, saving the result file as `service.json`.
+- Check the box for "Enable G Suite Domain-Wide Delegation"
+- Click "Done".
 
-Credentials.json:
+6. Add scopes for the service account.
 
-- Follow instructions to [create authorization credentials](https://developers.google.com/identity/protocols/oauth2/web-server#creatingcred)
-  - For local development: Authorized redirect URIs should be `http://localhost/`.
-- Existing credentials can be accessed through the [Google Developer Console](https://console.developers.google.com/apis/credentials?pli=1).
-
-Token.pickle: The initial token.pickle file must be generated locally prior to using Docker.
-This can be done by running the script locally the first time.
+- In the Google Admin Console (admin.google.com), go to Security.
+- Click on "Advanced Settings -> Manage API client access"
+- For the client name, use the Unique ID of the service account.
+- In the API Scopes, add the following scopes and click "Authorize".
 
 ```
-pipenv install --skip-lock
-pipenv run python main.py
+https://www.googleapis.com/auth/admin.directory.orgunit,
+https://www.googleapis.com/auth/admin.reports.usage.readonly,
+https://www.googleapis.com/auth/classroom.courses,
+https://www.googleapis.com/auth/classroom.coursework.students,
+https://www.googleapis.com/auth/classroom.guardianlinks.students,
+https://www.googleapis.com/auth/classroom.profile.emails,
+https://www.googleapis.com/auth/classroom.rosters,
+https://www.googleapis.com/auth/classroom.student-submissions.students.readonly,
+https://www.googleapis.com/auth/classroom.topics
 ```
 
 ### Running the job
@@ -123,6 +127,13 @@ Run the job using a database on localhost
 
 ```
 docker run --rm -it --network host google_classroom
+```
+
+Run the job locally
+
+```
+pipenv install --skip-lock (first time)
+pipenv run python main.py
 ```
 
 Optional flags will include different types of pulls (can also be done via env variables):

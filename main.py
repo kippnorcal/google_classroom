@@ -6,8 +6,7 @@ import sys
 import traceback
 
 from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
+from google.oauth2 import service_account
 import pandas as pd
 
 from api import (
@@ -41,9 +40,8 @@ def configure_logging(config):
     logging.getLogger("google").setLevel(logging.ERROR)
 
 
-def get_credentials():
-    """Retrieve Google auth credentials needed to build service"""
-    # If modifying these scopes, delete the file token.pickle.
+def get_credentials(config):
+    """Generate service account credentials object"""
     SCOPES = [
         "https://www.googleapis.com/auth/admin.directory.orgunit",
         "https://www.googleapis.com/auth/admin.reports.usage.readonly",
@@ -55,30 +53,14 @@ def get_credentials():
         "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly",
         "https://www.googleapis.com/auth/classroom.topics",
     ]
-    creds = None
-    # The file token.pickle stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists("token.pickle"):
-        with open("token.pickle", "rb") as token:
-            creds = pickle.load(token)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open("token.pickle", "wb") as token:
-            pickle.dump(creds, token)
-
-    return creds
+    return service_account.Credentials.from_service_account_file(
+        "service.json", scopes=SCOPES, subject=config.ACCOUNT_EMAIL
+    )
 
 
 def main(config):
     configure_logging(config)
-    creds = get_credentials()
+    creds = get_credentials(config)
     classroom_service = build("classroom", "v1", credentials=creds)
     admin_reports_service = build("admin", "reports_v1", credentials=creds)
     admin_directory_service = build("admin", "directory_v1", credentials=creds)

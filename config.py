@@ -43,6 +43,7 @@ class Config(object):
     """Base configuration object"""
 
     args = get_args()
+    ACCOUNT_EMAIL = os.getenv("ACCOUNT_EMAIL")
     STUDENT_ORG_UNIT = os.getenv("STUDENT_ORG_UNIT")
     SCHOOL_YEAR_START = os.getenv("SCHOOL_YEAR_START")
     DB_TYPE = os.getenv("DB_TYPE")
