@@ -138,6 +138,7 @@ pipenv run python main.py
 
 Optional flags will include different types of pulls (can also be done via env variables):
 
+- `--all` (for pulling all data)
 - `--usage`
 - `--courses`
 - `--topics`
