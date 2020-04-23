@@ -6,7 +6,7 @@ import math
 import os
 from googleapiclient.http import HttpError
 import pandas as pd
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import stop_after_attempt, wait_exponential, Retrying
 from sqlalchemy.schema import DropTable
 from sqlalchemy.exc import NoSuchTableError, InvalidRequestError
 from timer import elapsed
@@ -105,9 +105,6 @@ class EndPoint:
             self._generate_request_id(course_id, date, page),
         )
 
-    @retry(
-        stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
-    )
     @elapsed
     def batch_pull_data(self, course_ids=[None], dates=[None], overwrite=True):
         """
@@ -178,7 +175,15 @@ class EndPoint:
                 for (request, request_id) in remaining_requests:
                     batch.add(request, request_id=request_id)
                 remaining_requests.clear()
-                batch.execute()
+                if self.config.DEBUG:
+                    batch.execute()
+                else:
+                    retryer = Retrying(
+                        stop=stop_after_attempt(5),
+                        wait=wait_exponential(multiplier=1, min=4, max=10),
+                    )
+                    retryer(batch.execute)
+
                 if len(remaining_requests) > 0:
                     logging.info(
                         f"{self.classname()}: Requesting next page for {len(remaining_requests)} requests"
