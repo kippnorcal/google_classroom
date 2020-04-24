@@ -243,10 +243,10 @@ class StudentUsage(EndPoint):
             options["orgUnitID"] = self.org_unit_id
         return self.service.userUsageReport().get(**options)
 
-    def preprocess_records(self, usage_data):
+    def preprocess_records(self, records):
         """Parse classroom usage data into a dataframe with one row per user."""
-        records = []
-        for record in usage_data:
+        new_records = []
+        for record in records:
             row = {}
             row["Email"] = record.get("entity").get("userEmail")
             row["AsOfDate"] = record.get("date")
@@ -254,8 +254,8 @@ class StudentUsage(EndPoint):
                 record.get("parameters")
             )
             row["ImportDate"] = datetime.today().strftime("%Y-%m-%d")
-            records.append(row)
-        return records
+            new_records.append(row)
+        return new_records
 
     def _parse_classroom_last_used(self, parameters):
         """Get classroom last interaction time from parameters list."""
@@ -341,7 +341,7 @@ class Courses(EndPoint):
             courses = pd.read_sql_table(
                 self.table_name, con=self.sql.engine, schema=self.sql.schema
             )
-            return sorted(courses.id.unique())
+            return courses.id.unique()
         except InvalidRequestError as error:
             logging.debug(error)
             return None
@@ -432,7 +432,7 @@ class Students(EndPoint):
 class CourseWork(EndPoint):
     def __init__(self, service, sql, config):
         super().__init__(service, sql, config)
-        self.date_columns = ["creationTime", "updateTime"]
+        self.date_columns = ["creationTime", "updateTime", "dueDate"]
         self.columns = [
             "courseId",
             "id",
@@ -442,11 +442,7 @@ class CourseWork(EndPoint):
             "alternateLink",
             "creationTime",
             "updateTime",
-            "dueDate.year",
-            "dueDate.month",
-            "dueDate.day",
-            "dueTime.hours",
-            "dueTime.minutes",
+            "dueDate",
             "maxPoints",
             "workType",
             "assigneeMode",
@@ -468,6 +464,21 @@ class CourseWork(EndPoint):
                 pageToken=next_page_token,
             )
         )
+
+    def preprocess_records(self, records):
+        """Parse classroom usage data into a dataframe with one row per user."""
+        for record in records:
+            if "dueDate" in record:
+                year = record["dueDate"]["year"]
+                month = record["dueDate"]["month"]
+                day = record["dueDate"]["day"]
+                if "dueTime" in record:
+                    hours = record["dueTime"].get("hours", 0)
+                    minutes = record["dueTime"].get("minutes", 0)
+                    record["dueDate"] = datetime(year, month, day, hours, minutes)
+                else:
+                    record["dueDate"] = datetime(year, month, day)
+        return records
 
 
 class StudentSubmissions(EndPoint):
@@ -560,11 +571,11 @@ class StudentSubmissions(EndPoint):
                         )
                         parsed["assignedGraderId"] = grade_history.get("actorUserId")
 
-    def preprocess_records(self, coursework):
+    def preprocess_records(self, records):
         """Parse the coursework nested json into flat records for insertion
         in to database table"""
-        records = []
-        for record in coursework:
+        new_records = []
+        for record in records:
             parsed = {
                 "courseId": record.get("courseId"),
                 "courseWorkId": record.get("courseWorkId"),
@@ -579,5 +590,5 @@ class StudentSubmissions(EndPoint):
             }
             self._parse_statehistory(record, parsed)
             self._parse_gradehistory(record, parsed)
-            records.append(parsed)
-        return records
+            new_records.append(parsed)
+        return new_records
