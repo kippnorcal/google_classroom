@@ -6,7 +6,7 @@ import math
 import os
 from googleapiclient.http import HttpError
 import pandas as pd
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import stop_after_attempt, wait_exponential, Retrying
 from sqlalchemy.schema import DropTable
 from sqlalchemy.exc import NoSuchTableError, InvalidRequestError
 from timer import elapsed
@@ -105,9 +105,6 @@ class EndPoint:
             self._generate_request_id(course_id, date, page),
         )
 
-    @retry(
-        stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10)
-    )
     @elapsed
     def batch_pull_data(self, course_ids=[None], dates=[None], overwrite=True):
         """
@@ -140,9 +137,15 @@ class EndPoint:
                 return
 
             if "warnings" in response:
-                # Examples of warnings include partial data availability in StudentUsage.
                 for warning in response["warnings"]:
                     logging.debug(f"{warning['code']}: {warning['message']}")
+                    if warning["code"] == "PARTIAL_DATA_AVAILABLE":
+                        for item in warning["data"]:
+                            key = item["key"]
+                            value = item["value"]
+                            if key == "application" and value == "classroom":
+                                logging.debug(f"Ignoring responses with partial data.")
+                                return
 
             if "nextPageToken" in response:
                 next_request = self._generate_request_tuple(
@@ -178,7 +181,15 @@ class EndPoint:
                 for (request, request_id) in remaining_requests:
                     batch.add(request, request_id=request_id)
                 remaining_requests.clear()
-                batch.execute()
+                if self.config.DEBUG:
+                    batch.execute()
+                else:
+                    retryer = Retrying(
+                        stop=stop_after_attempt(5),
+                        wait=wait_exponential(multiplier=1, min=4, max=10),
+                    )
+                    retryer(batch.execute)
+
                 if len(remaining_requests) > 0:
                     logging.info(
                         f"{self.classname()}: Requesting next page for {len(remaining_requests)} requests"
@@ -200,9 +211,7 @@ class OrgUnits(EndPoint):
         return self.service.orgunits().list(customerId="my_customer")
 
     def filter_data(self, dataframe):
-        return dataframe.loc[
-            dataframe.name == self.config.STUDENT_ORG_UNIT, "orgUnitId"
-        ]
+        return dataframe.loc[dataframe.name == self.config.STUDENT_ORG_UNIT]
 
 
 class StudentUsage(EndPoint):
@@ -224,29 +233,23 @@ class StudentUsage(EndPoint):
         except:
             return None
 
-    def remove_dates_after(self, date):
-        """Removes the given date and any after from the database."""
-        logging.info(f"Deleting usage after {date} from {self.table_name}.")
-        table = self.sql.table(self.table_name)
-        query = table.delete().where(table.c.AsOfDate >= date)
-        self.sql.engine.execute(query)
-
     def request_data(self, course_id=None, date=None, next_page_token=None):
         """Request all usage for the given org unit."""
         options = {
             "userKey": "all",
             "date": date,
             "pageToken": next_page_token,
+            "parameters": "classroom:last_interaction_time",
         }
         if self.org_unit_id:
             # This is the CleverStudents org unit ID
             options["orgUnitID"] = self.org_unit_id
         return self.service.userUsageReport().get(**options)
 
-    def preprocess_records(self, usage_data):
+    def preprocess_records(self, records):
         """Parse classroom usage data into a dataframe with one row per user."""
-        records = []
-        for record in usage_data:
+        new_records = []
+        for record in records:
             row = {}
             row["Email"] = record.get("entity").get("userEmail")
             row["AsOfDate"] = record.get("date")
@@ -254,8 +257,8 @@ class StudentUsage(EndPoint):
                 record.get("parameters")
             )
             row["ImportDate"] = datetime.today().strftime("%Y-%m-%d")
-            records.append(row)
-        return records
+            new_records.append(row)
+        return new_records
 
     def _parse_classroom_last_used(self, parameters):
         """Get classroom last interaction time from parameters list."""
@@ -341,7 +344,7 @@ class Courses(EndPoint):
             courses = pd.read_sql_table(
                 self.table_name, con=self.sql.engine, schema=self.sql.schema
             )
-            return sorted(courses.id.unique())
+            return courses.id.unique()
         except InvalidRequestError as error:
             logging.debug(error)
             return None
@@ -432,7 +435,7 @@ class Students(EndPoint):
 class CourseWork(EndPoint):
     def __init__(self, service, sql, config):
         super().__init__(service, sql, config)
-        self.date_columns = ["creationTime", "updateTime"]
+        self.date_columns = ["creationTime", "updateTime", "dueDate"]
         self.columns = [
             "courseId",
             "id",
@@ -442,11 +445,7 @@ class CourseWork(EndPoint):
             "alternateLink",
             "creationTime",
             "updateTime",
-            "dueDate.year",
-            "dueDate.month",
-            "dueDate.day",
-            "dueTime.hours",
-            "dueTime.minutes",
+            "dueDate",
             "maxPoints",
             "workType",
             "assigneeMode",
@@ -468,6 +467,21 @@ class CourseWork(EndPoint):
                 pageToken=next_page_token,
             )
         )
+
+    def preprocess_records(self, records):
+        """Parse classroom usage data into a dataframe with one row per user."""
+        for record in records:
+            if "dueDate" in record:
+                year = record["dueDate"]["year"]
+                month = record["dueDate"]["month"]
+                day = record["dueDate"]["day"]
+                if "dueTime" in record:
+                    hours = record["dueTime"].get("hours", 0)
+                    minutes = record["dueTime"].get("minutes", 0)
+                    record["dueDate"] = datetime(year, month, day, hours, minutes)
+                else:
+                    record["dueDate"] = datetime(year, month, day)
+        return records
 
 
 class StudentSubmissions(EndPoint):
@@ -560,11 +574,11 @@ class StudentSubmissions(EndPoint):
                         )
                         parsed["assignedGraderId"] = grade_history.get("actorUserId")
 
-    def preprocess_records(self, coursework):
+    def preprocess_records(self, records):
         """Parse the coursework nested json into flat records for insertion
         in to database table"""
-        records = []
-        for record in coursework:
+        new_records = []
+        for record in records:
             parsed = {
                 "courseId": record.get("courseId"),
                 "courseWorkId": record.get("courseWorkId"),
@@ -579,5 +593,5 @@ class StudentSubmissions(EndPoint):
             }
             self._parse_statehistory(record, parsed)
             self._parse_gradehistory(record, parsed)
-            records.append(parsed)
-        return records
+            new_records.append(parsed)
+        return new_records

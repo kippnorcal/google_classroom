@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 import os
 import pickle
@@ -70,16 +70,12 @@ def main(config):
     if config.PULL_USAGE:
         # First get student org unit
         result = OrgUnits(admin_directory_service, sql, config).batch_pull_data()
-        ou_id = None if result.empty else result.iloc[0]
+        org_unit_id = None if result.empty else result.iloc[0].loc["orgUnitId"]
 
-        # Then get usage
-        # Clear out the last day's worth of data, because it may only be partially
-        # complete. Then load data on all dates from that day until today.
-        usage = StudentUsage(admin_reports_service, sql, config, ou_id)
+        # Then get usage, loading data from after the last available day.
+        usage = StudentUsage(admin_reports_service, sql, config, org_unit_id)
         last_date = usage.get_last_date()
-        if last_date:
-            usage.remove_dates_after(last_date)
-        start_date = last_date or datetime.strptime(
+        start_date = last_date + timedelta(days=1) or datetime.strptime(
             config.SCHOOL_YEAR_START, "%Y-%m-%d"
         )
         date_range = pd.date_range(start=start_date, end=datetime.today()).strftime(
