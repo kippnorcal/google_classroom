@@ -205,9 +205,7 @@ class OrgUnits(EndPoint):
         return self.service.orgunits().list(customerId="my_customer")
 
     def filter_data(self, dataframe):
-        return dataframe.loc[
-            dataframe.name == self.config.STUDENT_ORG_UNIT, "orgUnitId"
-        ]
+        return dataframe.loc[dataframe.name == self.config.STUDENT_ORG_UNIT]
 
 
 class StudentUsage(EndPoint):
