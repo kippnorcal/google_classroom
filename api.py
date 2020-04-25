@@ -137,9 +137,15 @@ class EndPoint:
                 return
 
             if "warnings" in response:
-                # Examples of warnings include partial data availability in StudentUsage.
                 for warning in response["warnings"]:
                     logging.debug(f"{warning['code']}: {warning['message']}")
+                    if warning["code"] == "PARTIAL_DATA_AVAILABLE":
+                        for item in warning["data"]:
+                            key = item["key"]
+                            value = item["value"]
+                            if key == "application" and value == "classroom":
+                                logging.debug(f"Ignoring responses with partial data.")
+                                return
 
             if "nextPageToken" in response:
                 next_request = self._generate_request_tuple(
@@ -227,19 +233,13 @@ class StudentUsage(EndPoint):
         except:
             return None
 
-    def remove_dates_after(self, date):
-        """Removes the given date and any after from the database."""
-        logging.info(f"Deleting usage after {date} from {self.table_name}.")
-        table = self.sql.table(self.table_name)
-        query = table.delete().where(table.c.AsOfDate >= date)
-        self.sql.engine.execute(query)
-
     def request_data(self, course_id=None, date=None, next_page_token=None):
         """Request all usage for the given org unit."""
         options = {
             "userKey": "all",
             "date": date,
             "pageToken": next_page_token,
+            "parameters": "classroom:last_interaction_time",
         }
         if self.org_unit_id:
             # This is the CleverStudents org unit ID
