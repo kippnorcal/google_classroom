@@ -317,9 +317,7 @@ class Guardians(EndPoint):
             self.service.userProfiles()
             .guardians()
             .list(
-                studentId="-",
-                pageToken=next_page_token,
-                pageSize=self.config.PAGE_SIZE,
+                studentId="-", pageToken=next_page_token, pageSize=self.config.PAGE_SIZE
             )
         )
 
