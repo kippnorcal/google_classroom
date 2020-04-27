@@ -54,6 +54,7 @@ class EndPoint:
         df = pd.json_normalize(new_records)
         df = df.reindex(columns=self.columns)
         df = self.filter_data(df)
+        df = df.astype("object")
         if self.date_columns:
             date_types = {col: "datetime64[ns]" for col in self.date_columns}
             df = df.astype(date_types)
