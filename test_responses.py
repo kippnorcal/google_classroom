@@ -1,6 +1,13 @@
 import pandas as pd
 
-ORG_UNIT_SOLUTION = pd.DataFrame({"orgUnitId": ["id:987654"]})
+ORG_UNIT_SOLUTION = pd.DataFrame(
+    {
+        "name": ["Test Organization 2"],
+        "description": ["Description 2"],
+        "orgUnitPath": ["/TestOrg2"],
+        "orgUnitId": ["id:987654"],
+    }
+)
 ORG_UNIT_RESPONSE = {
     "organizationUnits": [
         {
