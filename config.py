@@ -13,6 +13,7 @@ def get_args():
     )
     parser.add_argument("--courses", help="Import course lists", action="store_true")
     parser.add_argument("--topics", help="Import course topics", action="store_true")
+    parser.add_argument("--aliases", help="Import course aliases", action="store_true")
     parser.add_argument(
         "--coursework", help="Import course assignments", action="store_true"
     )
@@ -24,6 +25,9 @@ def get_args():
     )
     parser.add_argument(
         "--guardians", help="Import student guardians", action="store_true"
+    )
+    parser.add_argument(
+        "--invitations", help="Import course invitations", action="store_true"
     )
     parser.add_argument(
         "--submissions",
@@ -55,11 +59,15 @@ class Config(object):
     PULL_COURSEWORK = (
         os.getenv("PULL_COURSEWORK") == "YES" or args.coursework or args.all
     )
+    PULL_ALIASES = os.getenv("PULL_ALIASES") == "YES" or args.aliases or args.all
     PULL_STUDENTS = os.getenv("PULL_STUDENTS") == "YES" or args.students or args.all
     PULL_TEACHERS = os.getenv("PULL_TEACHERS") == "YES" or args.teachers or args.all
     PULL_GUARDIANS = os.getenv("PULL_GUARDIANS") == "YES" or args.guardians or args.all
     PULL_SUBMISSIONS = (
         os.getenv("PULL_SUBMISSIONS") == "YES" or args.submissions or args.all
+    )
+    PULL_INVITATIONS = (
+        os.getenv("PULL_INVITATIONS") == "YES" or args.invitations or args.all
     )
     PULL_GUARDIAN_INVITES = (
         os.getenv("PULL_GUARDIAN_INVITES") == "YES" or args.invites or args.all

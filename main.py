@@ -12,8 +12,10 @@ import pandas as pd
 from api import (
     Courses,
     CourseWork,
+    CourseAliases,
     GuardianInvites,
     Guardians,
+    Invitations,
     OrgUnits,
     Students,
     StudentSubmissions,
@@ -102,8 +104,18 @@ def main(config):
         or config.PULL_STUDENTS
         or config.PULL_TEACHERS
         or config.PULL_SUBMISSIONS
+        or config.PULL_ALIASES
+        or config.PULL_INVITATIONS
     ):
         course_ids = Courses(classroom_service, sql, config).get_course_ids()
+
+    # Get course aliases
+    if config.PULL_ALIASES:
+        CourseAliases(classroom_service, sql, config).batch_pull_data(course_ids)
+
+    # Get course invitations
+    if config.PULL_INVITATIONS:
+        Invitations(classroom_service, sql, config).batch_pull_data(course_ids)
 
     # Get course topics
     if config.PULL_TOPICS:
