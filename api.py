@@ -5,7 +5,6 @@ import logging
 import math
 import os
 import time
-import sys
 from googleapiclient.http import HttpError
 import pandas as pd
 from tenacity import stop_after_attempt, wait_exponential, Retrying
@@ -102,13 +101,24 @@ class EndPoint:
         """
         return ";".join([str(course_id), str(date), str(next_page_token), str(page)])
 
+    def _get_request_info(self, request_id):
+        """
+        Splits out request ID into its components.
+        Should always reverse `_generate_request_id`
+        """
+
+        course_id, date, next_page_token, page = request_id.split(";")
+        return course_id, date, next_page_token, page
+
     def _generate_request_tuple(self, course_id, date, next_page_token, page):
+        """Generates a tuple with request data and a request ID."""
         return (
             self.request_data(course_id, date, next_page_token),
             self._generate_request_id(course_id, date, next_page_token, page),
         )
 
     def execute_batch_with_retry(self, batch):
+        """Executes the passed in batch, with retry logi when not in debug."""
         if self.config.DEBUG:
             batch.execute()
         else:
@@ -117,13 +127,6 @@ class EndPoint:
                 wait=wait_exponential(multiplier=1, min=4, max=10),
             )
             retryer(batch.execute)
-
-    def sleep_with_timer(self, seconds):
-        for i in range(seconds, 0, -1):
-            sys.stdout.write(str(i) + " ")
-            sys.stdout.flush()
-            time.sleep(1)
-        print("\n")
 
     @elapsed
     def batch_pull_data(self, course_ids=[None], dates=[None], overwrite=True):
@@ -151,7 +154,7 @@ class EndPoint:
 
         def callback(request_id, response, exception):
             """A local callback for batch requests when they have completed."""
-            course_id, date, next_page_token, page = request_id.split(";")
+            course_id, date, next_page_token, page = self._get_request_info(request_id)
             if next_page_token == "None":
                 next_page_token = None
 
@@ -209,9 +212,11 @@ class EndPoint:
             remaining_requests.append(request_tuple)
 
         while len(remaining_requests) > 0:
-            logging.info(
-                f"{self.classname()}: {len(remaining_requests)} requests remaining."
-            )
+            log = f"{self.classname()}: {len(remaining_requests)} requests remaining."
+            if len(remaining_requests) == 1:
+                _, _, _, page = self._get_request_info(remaining_requests[0][1])
+                log += f" On page {page}."
+            logging.info(log)
             batch = self.service.new_batch_http_request(callback=callback)
             current_batch = 0
             while len(remaining_requests) > 0 and current_batch < self.batch_size:
@@ -221,8 +226,10 @@ class EndPoint:
             self.execute_batch_with_retry(batch)
             if quota_exceeded:
                 quota_exceeded = False
-                print("Quota exceeded. Snoozing For 20 seconds.")
-                self.sleep_with_timer(20)
+                logging.info(
+                    f"{self.classname()}: Quota exceeded. Pausing for 20 seconds..."
+                )
+                time.sleep(20)
 
         return all_data
 
