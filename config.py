@@ -88,6 +88,8 @@ class Config(object):
     GUARDIANS_BATCH_SIZE = int(os.getenv("GUARDIANS_BATCH_SIZE") or 1000)
     SUBMISSIONS_BATCH_SIZE = int(os.getenv("SUBMISSIONS_BATCH_SIZE") or 120)
     GUARDIAN_INVITES_BATCH_SIZE = int(os.getenv("GUARDIAN_INVITES_BATCH_SIZE") or 1000)
+    ALIASES_BATCH_SIZE = int(os.getenv("ALIASES_BATCH_SIZE") or 1000)
+    INVITATIONS_BATCH_SIZE = int(os.getenv("INVITATIONS_BATCH_SIZE") or 1000)
     PAGE_SIZE = int(os.getenv("PAGE_SIZE") or 1000)
 
 

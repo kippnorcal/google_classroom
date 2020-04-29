@@ -636,7 +636,7 @@ class CourseAliases(EndPoint):
         super().__init__(service, sql, config)
         self.columns = ["courseId", "alias"]
         self.request_key = "aliases"
-        self.batch_size = 50
+        self.batch_size = config.ALIASES_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         """Request all topics for this course."""
@@ -656,7 +656,7 @@ class Invitations(EndPoint):
         super().__init__(service, sql, config)
         self.columns = ["id", "userId", "courseId", "role"]
         self.request_key = "invitations"
-        self.batch_size = 1000
+        self.batch_size = config.INVITATIONS_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         """Request all topics for this course."""
@@ -665,4 +665,3 @@ class Invitations(EndPoint):
             courseId=course_id,
             pageSize=self.config.PAGE_SIZE,
         )
-
