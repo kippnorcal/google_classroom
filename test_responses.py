@@ -168,6 +168,21 @@ COURSE_RESPONSE = {
 ALIAS_SOLUTION = pd.DataFrame({"courseId": [None], "alias": ["d:school_test1"]})
 ALIAS_RESPONSE = {"aliases": [{"alias": "d:school_test1"}]}
 
+INVITATION_SOLUTION = pd.DataFrame(
+    {
+        "id": ["12345", "23456"],
+        "userId": ["1", "2"],
+        "courseId": ["1234", "5678"],
+        "role": ["STUDENT", "STUDENT"],
+    }
+)
+INVITATION_RESPONSE = {
+    "invitations": [
+        {"id": "12345", "userId": "1", "courseId": "1234", "role": "STUDENT"},
+        {"id": "23456", "userId": "2", "courseId": "5678", "role": "STUDENT"},
+    ]
+}
+
 TOPIC_SOLUTION = pd.DataFrame(
     {
         "courseId": ["1234", "5678"],
@@ -356,6 +371,9 @@ class FakeService:
 
     def orgunits(self):
         return FakeEndpoint(ORG_UNIT_RESPONSE)
+
+    def invitations(self):
+        return FakeEndpoint(INVITATION_RESPONSE)
 
     def new_batch_http_request(self, callback):
         return FakeBatchRequest(callback)
