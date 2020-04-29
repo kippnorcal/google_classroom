@@ -665,3 +665,35 @@ class Invitations(EndPoint):
             courseId=course_id,
             pageSize=self.config.PAGE_SIZE,
         )
+
+
+class Announcements(EndPoint):
+    def __init__(self, service, sql, config):
+        super().__init__(service, sql, config)
+        self.date_columns = ["creationTime", "updateTime", "scheduledTime"]
+        self.columns = [
+            "id",
+            "courseId",
+            "text",
+            "state",
+            "alternateLink",
+            "creationTime",
+            "updateTime",
+            "scheduledTime",
+            "assigneeMode",
+            "creatorUserId",
+        ]
+        self.request_key = "announcements"
+        self.batch_size = config.ANNOUNCEMENTS_BATCH_SIZE
+
+    def request_data(self, course_id=None, date=None, next_page_token=None):
+        """Request all announcements for this course."""
+        return (
+            self.service.courses()
+            .announcements()
+            .list(
+                pageToken=next_page_token,
+                courseId=course_id,
+                pageSize=self.config.PAGE_SIZE,
+            )
+        )

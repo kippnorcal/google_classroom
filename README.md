@@ -49,6 +49,7 @@ PULL_SUBMISSIONS=
 PULL_GUARDIAN_INVITES=
 PULL_ALIASES=
 PULL_INVITATIONS=
+PULL_ANNOUNCEMENTS=
 
 # (Optional) Batch parameters. Can be configured and changed to optimize performance.
 # *_BATCH_SIZE is the number of dates or courses to batch at a time. MAX: 1000
@@ -65,6 +66,7 @@ SUBMISSIONS_BATCH_SIZE=
 GUARDIAN_INVITES_BATCH_SIZE=
 ALIASES_BATCH_SIZE=
 INVITATIONS_BATCH_SIZE=
+ANNOUNCEMENTS_BATCH_SIZE=
 PAGE_SIZE=The number of items to page at once.
 
 # Email notification variables
@@ -104,6 +106,7 @@ EMAIL_PORT=
 ```
 https://www.googleapis.com/auth/admin.directory.orgunit,
 https://www.googleapis.com/auth/admin.reports.usage.readonly,
+https://www.googleapis.com/auth/classroom.announcements,
 https://www.googleapis.com/auth/classroom.courses,
 https://www.googleapis.com/auth/classroom.coursework.students,
 https://www.googleapis.com/auth/classroom.guardianlinks.students,
@@ -154,6 +157,7 @@ Optional flags will include different types of pulls (can also be done via env v
 - `--invites`
 - `--aliases`
 - `--invitations`
+- `--announcements`
 
 Use the flag `--debug` to turn on debug logging.
 

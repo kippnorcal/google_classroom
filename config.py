@@ -38,6 +38,9 @@ def get_args():
         "--invites", help="Import guardian invite statuses", action="store_true"
     )
     parser.add_argument(
+        "--announcements", help="Import course announcements", action="store_true"
+    )
+    parser.add_argument(
         "--debug", help="Set logging level for troubleshooting", action="store_true"
     )
     args, _ = parser.parse_known_args()
@@ -72,6 +75,9 @@ class Config(object):
     PULL_GUARDIAN_INVITES = (
         os.getenv("PULL_GUARDIAN_INVITES") == "YES" or args.invites or args.all
     )
+    PULL_ANNOUNCEMENTS = (
+        os.getenv("PULL_ANNOUNCEMENTS") == "YES" or args.announcements or args.all
+    )
     SENDER_EMAIL = os.getenv("SENDER_EMAIL")
     SENDER_PWD = os.getenv("SENDER_PWD")
     EMAIL_SERVER = os.getenv("EMAIL_SERVER")
@@ -90,6 +96,7 @@ class Config(object):
     GUARDIAN_INVITES_BATCH_SIZE = int(os.getenv("GUARDIAN_INVITES_BATCH_SIZE") or 1000)
     ALIASES_BATCH_SIZE = int(os.getenv("ALIASES_BATCH_SIZE") or 1000)
     INVITATIONS_BATCH_SIZE = int(os.getenv("INVITATIONS_BATCH_SIZE") or 1000)
+    ANNOUNCEMENTS_BATCH_SIZE = int(os.getenv("ANNOUNCEMENTS_BATCH_SIZE") or 1000)
     PAGE_SIZE = int(os.getenv("PAGE_SIZE") or 1000)
 
 

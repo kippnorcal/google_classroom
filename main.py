@@ -10,6 +10,7 @@ from google.oauth2 import service_account
 import pandas as pd
 
 from api import (
+    Announcements,
     Courses,
     CourseWork,
     CourseAliases,
@@ -45,6 +46,7 @@ def configure_logging(config):
 def get_credentials(config):
     """Generate service account credentials object"""
     SCOPES = [
+        "https://www.googleapis.com/auth/classroom.announcements",
         "https://www.googleapis.com/auth/admin.directory.orgunit",
         "https://www.googleapis.com/auth/admin.reports.usage.readonly",
         "https://www.googleapis.com/auth/classroom.courses",
@@ -106,6 +108,7 @@ def main(config):
         or config.PULL_SUBMISSIONS
         or config.PULL_ALIASES
         or config.PULL_INVITATIONS
+        or config.PULL_ANNOUNCEMENTS
     ):
         course_ids = Courses(classroom_service, sql, config).get_course_ids()
 
@@ -116,6 +119,10 @@ def main(config):
     # Get course invitations
     if config.PULL_INVITATIONS:
         Invitations(classroom_service, sql, config).batch_pull_data(course_ids)
+
+    # Get course announcements
+    if config.PULL_ANNOUNCEMENTS:
+        Announcements(classroom_service, sql, config).batch_pull_data(course_ids)
 
     # Get course topics
     if config.PULL_TOPICS:
