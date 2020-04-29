@@ -47,6 +47,8 @@ PULL_TEACHERS=
 PULL_GUARDIANS=
 PULL_SUBMISSIONS=
 PULL_GUARDIAN_INVITES=
+PULL_ALIASES=
+PULL_INVITATIONS=
 
 # (Optional) Batch parameters. Can be configured and changed to optimize performance.
 # *_BATCH_SIZE is the number of dates or courses to batch at a time. MAX: 1000
@@ -61,6 +63,8 @@ TEACHERS_BATCH_SIZE=
 GUARDIANS_BATCH_SIZE=
 SUBMISSIONS_BATCH_SIZE=
 GUARDIAN_INVITES_BATCH_SIZE=
+ALIASES_BATCH_SIZE=
+INVITATIONS_BATCH_SIZE=
 PAGE_SIZE=The number of items to page at once.
 
 # Email notification variables
@@ -148,6 +152,8 @@ Optional flags will include different types of pulls (can also be done via env v
 - `--guardians`
 - `--submissions`
 - `--invites`
+- `--aliases`
+- `--invitations`
 
 Use the flag `--debug` to turn on debug logging.
 
