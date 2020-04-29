@@ -1,5 +1,6 @@
 from config import TestConfig, db_generator
 from api import (
+    Announcements,
     CourseAliases,
     Courses,
     OrgUnits,
@@ -23,6 +24,7 @@ from test_responses import (
     STUDENT_SOLUTION,
     TEACHER_SOLUTION,
     INVITATION_SOLUTION,
+    ANNOUNCEMENT_SOLUTION,
 )
 
 # TODO: Add tests for Coursework and Submissions.
@@ -91,6 +93,13 @@ class TestEndToEnd:
         self.generic_get_test(
             Invitations(self.service, self.sql, self.config),
             INVITATION_SOLUTION,
+            course_ids=[0, 1],
+        )
+
+    def test_get_announcements(self):
+        self.generic_get_test(
+            Announcements(self.service, self.sql, self.config),
+            ANNOUNCEMENT_SOLUTION,
             course_ids=[0, 1],
         )
 
