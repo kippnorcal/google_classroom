@@ -639,7 +639,7 @@ class CourseAliases(EndPoint):
         self.batch_size = config.ALIASES_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
-        """Request all topics for this course."""
+        """Request all aliases for this course."""
         return (
             self.service.courses()
             .aliases()
@@ -659,7 +659,7 @@ class Invitations(EndPoint):
         self.batch_size = config.INVITATIONS_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
-        """Request all topics for this course."""
+        """Request all invitations for this course."""
         return self.service.invitations().list(
             pageToken=next_page_token,
             courseId=course_id,
