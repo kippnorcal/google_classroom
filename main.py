@@ -73,7 +73,9 @@ def main(config):
     # Get usage
     if config.PULL_USAGE:
         # First get student org unit
-        result = OrgUnits(admin_directory_service, sql, config).batch_pull_data()
+        orgUnits = OrgUnits(admin_directory_service, sql, config)
+        orgUnits.batch_pull_data()
+        result = orgUnits.return_all_data()
         org_unit_id = None if result.empty else result.iloc[0].loc["orgUnitId"]
 
         # Then get usage, loading data from after the last available day.

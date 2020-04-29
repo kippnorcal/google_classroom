@@ -397,7 +397,7 @@ class FakeRequest:
                 # If a course_id is provided, this splits the results into two courses.
                 key = list(self.result.keys())[0]
                 if course_id == 0:
-                    return {key: self.result[key][0]}
+                    return {key: self.result[key][:1]}
                 else:
                     return {key: self.result[key][1:]}
         return self.result
