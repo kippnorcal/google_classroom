@@ -30,7 +30,7 @@ ORG_UNIT_RESPONSE = {
             "parentOrgUnitPath": "/",
             "parentOrgUnitId": "id:876543",
         },
-    ],
+    ]
 }
 
 GUARDIAN_SOLUTION = pd.DataFrame(
@@ -164,6 +164,9 @@ COURSE_RESPONSE = {
         },
     ]
 }
+
+ALIAS_SOLUTION = pd.DataFrame({"courseId": [None], "alias": ["d:school_test1"]})
+ALIAS_RESPONSE = {"aliases": [{"alias": "d:school_test1"}]}
 
 TOPIC_SOLUTION = pd.DataFrame(
     {
@@ -344,6 +347,9 @@ class FakeService:
 
         def teachers(self):
             return FakeEndpoint(TEACHER_RESPONSE)
+
+        def aliases(self):
+            return FakeEndpoint(ALIAS_RESPONSE)
 
     def courses(self):
         return self.Courses(COURSE_RESPONSE)

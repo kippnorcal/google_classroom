@@ -1,5 +1,6 @@
 from config import TestConfig, db_generator
 from api import (
+    CourseAliases,
     Courses,
     OrgUnits,
     Guardians,
@@ -12,6 +13,7 @@ import os
 import pandas as pd
 from test_responses import (
     FakeService,
+    ALIAS_SOLUTION,
     ORG_UNIT_SOLUTION,
     GUARDIAN_SOLUTION,
     GUARDIAN_INVITE_SOLUTION,
@@ -36,7 +38,7 @@ class TestEndToEnd:
 
     def test_get_org_units(self):
         self.generic_get_test(
-            OrgUnits(self.service, self.sql, self.config), ORG_UNIT_SOLUTION,
+            OrgUnits(self.service, self.sql, self.config), ORG_UNIT_SOLUTION
         )
 
     def test_get_guardians(self):
@@ -52,7 +54,7 @@ class TestEndToEnd:
 
     def test_get_courses(self):
         self.generic_get_test(
-            Courses(self.service, self.sql, self.config), COURSE_SOLUTION,
+            Courses(self.service, self.sql, self.config), COURSE_SOLUTION
         )
 
     def test_get_topics(self):
@@ -73,6 +75,13 @@ class TestEndToEnd:
         self.generic_get_test(
             Teachers(self.service, self.sql, self.config),
             TEACHER_SOLUTION,
+            course_ids=[0, 1],
+        )
+
+    def test_get_aliases(self):
+        self.generic_get_test(
+            CourseAliases(self.service, self.sql, self.config),
+            ALIAS_SOLUTION,
             course_ids=[0, 1],
         )
 
