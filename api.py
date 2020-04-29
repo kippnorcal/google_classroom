@@ -4,6 +4,7 @@ import json
 import logging
 import math
 import os
+import time
 from googleapiclient.http import HttpError
 import pandas as pd
 from tenacity import stop_after_attempt, wait_exponential, Retrying
@@ -90,7 +91,7 @@ class EndPoint:
         except NoSuchTableError as error:
             logging.debug(f"{error}: Attempted deletion, but no table exists.")
 
-    def _generate_request_id(self, course_id, date, page):
+    def _generate_request_id(self, course_id, date, next_page_token, page):
         """
         Generates a string that can be used as a request_id for batch requesting that
         contains information on course_id, date, and page number. This is the only
@@ -98,13 +99,34 @@ class EndPoint:
         paginating by calling the request with the same parameters again.
         NOTE: All request_ids must be unique, so the page number is necessary.
         """
-        return ";".join([str(course_id), str(date), str(int(page) + 1)])
+        return ";".join([str(course_id), str(date), str(next_page_token), str(page)])
 
-    def _generate_request_tuple(self, course_id, date, page, next_page_token):
+    def _get_request_info(self, request_id):
+        """
+        Splits out request ID into its components.
+        Should always reverse `_generate_request_id`
+        """
+
+        course_id, date, next_page_token, page = request_id.split(";")
+        return course_id, date, next_page_token, page
+
+    def _generate_request_tuple(self, course_id, date, next_page_token, page):
+        """Generates a tuple with request data and a request ID."""
         return (
             self.request_data(course_id, date, next_page_token),
-            self._generate_request_id(course_id, date, page),
+            self._generate_request_id(course_id, date, next_page_token, page),
         )
+
+    def execute_batch_with_retry(self, batch):
+        """Executes the passed in batch, with retry logi when not in debug."""
+        if self.config.DEBUG:
+            batch.execute()
+        else:
+            retryer = Retrying(
+                stop=stop_after_attempt(5),
+                wait=wait_exponential(multiplier=1, min=4, max=10),
+            )
+            retryer(batch.execute)
 
     @elapsed
     def batch_pull_data(self, course_ids=[None], dates=[None], overwrite=True):
@@ -127,13 +149,26 @@ class EndPoint:
             self._delete_local_file()
 
         all_data = None
+        quota_exceeded = False
         remaining_requests = []
 
         def callback(request_id, response, exception):
             """A local callback for batch requests when they have completed."""
-            course_id, date, page = request_id.split(";")
+            course_id, date, next_page_token, page = self._get_request_info(request_id)
+            if next_page_token == "None":
+                next_page_token = None
 
             if exception:
+                status = exception.resp.status
+                # 429: Quota exceeded.
+                # Add the original request back to retry later.
+                if status == 429:
+                    same_request = self._generate_request_tuple(
+                        course_id, date, next_page_token, page
+                    )
+                    remaining_requests.append(same_request)
+                    nonlocal quota_exceeded
+                    quota_exceeded = True
                 logging.debug(exception)
                 return
 
@@ -149,8 +184,11 @@ class EndPoint:
                                 return
 
             if "nextPageToken" in response:
+                logging.debug(
+                    f"{self.classname()}: Queueing next page from course {course_id}"
+                )
                 next_request = self._generate_request_tuple(
-                    course_id, date, page, response["nextPageToken"]
+                    course_id, date, response["nextPageToken"], int(page) + 1
                 )
                 remaining_requests.append(next_request)
 
@@ -166,35 +204,32 @@ class EndPoint:
                 nonlocal all_data
                 all_data = df if all_data is None else all_data.append(df)
 
-        request_list = list(itertools.product(course_ids, dates))
-        number_batches = math.ceil(len(request_list) / self.batch_size)
-        for batch_num, i in enumerate(range(0, len(request_list), self.batch_size)):
-            request_batch = request_list[i : i + self.batch_size]
-            logging.info(
-                f"{self.classname()}: making {len(request_batch)} requests, batch {batch_num+1}/{number_batches}"
-            )
-            for (course_id, date) in request_batch:
-                request = self._generate_request_tuple(course_id, date, str(0), None)
-                remaining_requests.append(request)
+        request_combinations = list(itertools.product(course_ids, dates))
+        # Reverses because the items are taken in order from the back by popping.
+        request_combinations.reverse()
+        for (course_id, date) in request_combinations:
+            request_tuple = self._generate_request_tuple(course_id, date, None, 0)
+            remaining_requests.append(request_tuple)
 
-            while len(remaining_requests) > 0:
-                batch = self.service.new_batch_http_request(callback=callback)
-                for (request, request_id) in remaining_requests:
-                    batch.add(request, request_id=request_id)
-                remaining_requests.clear()
-                if self.config.DEBUG:
-                    batch.execute()
-                else:
-                    retryer = Retrying(
-                        stop=stop_after_attempt(5),
-                        wait=wait_exponential(multiplier=1, min=4, max=10),
-                    )
-                    retryer(batch.execute)
-
-                if len(remaining_requests) > 0:
-                    logging.info(
-                        f"{self.classname()}: Requesting next page for {len(remaining_requests)} requests"
-                    )
+        while len(remaining_requests) > 0:
+            log = f"{self.classname()}: {len(remaining_requests)} requests remaining."
+            if len(remaining_requests) == 1:
+                _, _, _, page = self._get_request_info(remaining_requests[0][1])
+                log += f" On page {page}."
+            logging.info(log)
+            batch = self.service.new_batch_http_request(callback=callback)
+            current_batch = 0
+            while len(remaining_requests) > 0 and current_batch < self.batch_size:
+                current_batch += 1
+                (request, request_id) = remaining_requests.pop()
+                batch.add(request, request_id=request_id)
+            self.execute_batch_with_retry(batch)
+            if quota_exceeded:
+                quota_exceeded = False
+                logging.info(
+                    f"{self.classname()}: Quota exceeded. Pausing for 20 seconds..."
+                )
+                time.sleep(20)
 
         return all_data
 
