@@ -77,7 +77,7 @@ class EndPoint:
         logging.debug(
             f"{self.classname()}: inserting {len(df)} records into {self.table_name}."
         )
-        self.sql.insert_into(self.table_name, df)
+        self.sql.insert_into(self.table_name, df, chunksize=10000)
 
     def _delete_local_file(self):
         """Deletes the local debug json file in /data."""
