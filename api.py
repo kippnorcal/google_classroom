@@ -34,7 +34,8 @@ class EndPoint:
             return pd.read_sql_table(
                 self.table_name, con=self.sql.engine, schema=self.sql.schema
             )
-        except:
+        except InvalidRequestError as error:
+            logging.debug(error)
             return None
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
@@ -60,6 +61,7 @@ class EndPoint:
 
     def _process_and_filter_records(self, records):
         """Processes incoming records and converts them into a cleaned dataframe"""
+        logging.debug(f"{self.classname()}: processing {len(records)} records.")
         new_records = self.preprocess_records(records)
         df = pd.json_normalize(new_records)
         df = df.reindex(columns=self.columns)
@@ -151,7 +153,7 @@ class EndPoint:
         if overwrite:
             self._drop_table()
 
-        if self.config.DEBUG:
+        if self.config.DEBUGFILE:
             self._delete_local_file()
 
         batch_data = []
@@ -202,6 +204,7 @@ class EndPoint:
             nonlocal batch_data
             batch_data.extend(records)
 
+        logging.info(f"{self.classname()}: Generating requests...")
         request_combinations = list(itertools.product(course_ids, dates))
         # Reverses because the items are taken in order from the back by popping.
         request_combinations.reverse()
@@ -227,13 +230,13 @@ class EndPoint:
 
             # Process the results of the batch.
             if len(batch_data) > 0:
-                if self.config.DEBUG:
+                if self.config.DEBUGFILE:
                     self._write_json_to_file(batch_data)
                 df = self._process_and_filter_records(batch_data)
                 self._write_to_db(df)
                 batch_data = []
 
-            # Pause if quota exceeded. 20s because it the quota is a sliding time window.
+            # Pause if quota exceeded. 20s because the quota is a sliding time window.
             if quota_exceeded:
                 quota_exceeded = False
                 logging.info(
@@ -380,16 +383,6 @@ class Courses(EndPoint):
         ]
         self.request_key = "courses"
         self.batch_size = config.COURSES_BATCH_SIZE
-
-    def get_course_ids(self):
-        try:
-            courses = pd.read_sql_table(
-                self.table_name, con=self.sql.engine, schema=self.sql.schema
-            )
-            return courses.id.unique()
-        except InvalidRequestError as error:
-            logging.debug(error)
-            return None
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         """Request all active courses."""

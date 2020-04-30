@@ -113,7 +113,8 @@ def main(config):
         or config.PULL_INVITATIONS
         or config.PULL_ANNOUNCEMENTS
     ):
-        course_ids = Courses(classroom_service, sql, config).get_course_ids()
+        courses = Courses(classroom_service, sql, config).return_all_data()
+        course_ids = courses.id.unique()
 
     # Get course aliases
     if config.PULL_ALIASES:
