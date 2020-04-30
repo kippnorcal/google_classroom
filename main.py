@@ -75,9 +75,10 @@ def main(config):
         # Then get usage, loading data from after the last available day.
         usage = StudentUsage(admin_reports_service, sql, config, org_unit_id)
         last_date = usage.get_last_date()
-        start_date = last_date + timedelta(days=1) or datetime.strptime(
-            config.SCHOOL_YEAR_START, "%Y-%m-%d"
-        )
+        if last_date:
+            start_date = last_date + timedelta(days=1)
+        else:
+            start_date = datetime.strptime(config.SCHOOL_YEAR_START, "%Y-%m-%d")
         date_range = pd.date_range(start=start_date, end=datetime.today()).strftime(
             "%Y-%m-%d"
         )
