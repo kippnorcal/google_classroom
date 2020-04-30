@@ -1,6 +1,13 @@
 import pandas as pd
 
-ORG_UNIT_SOLUTION = pd.DataFrame({"orgUnitId": ["id:987654"]})
+ORG_UNIT_SOLUTION = pd.DataFrame(
+    {
+        "name": ["Test Organization 2"],
+        "description": ["Description 2"],
+        "orgUnitPath": ["/TestOrg2"],
+        "orgUnitId": ["id:987654"],
+    }
+)
 ORG_UNIT_RESPONSE = {
     "organizationUnits": [
         {
@@ -23,7 +30,7 @@ ORG_UNIT_RESPONSE = {
             "parentOrgUnitPath": "/",
             "parentOrgUnitId": "id:876543",
         },
-    ],
+    ]
 }
 
 GUARDIAN_SOLUTION = pd.DataFrame(
@@ -154,6 +161,83 @@ COURSE_RESPONSE = {
             "section": "2",
             "teacherGroupEmail": "math_teachers@class.com",
             "updateTime": "2020-04-01T20:54:08.531Z",
+        },
+    ]
+}
+
+ALIAS_SOLUTION = pd.DataFrame({"courseId": [None], "alias": ["d:school_test1"]})
+ALIAS_RESPONSE = {"aliases": [{"alias": "d:school_test1"}]}
+
+INVITATION_SOLUTION = pd.DataFrame(
+    {
+        "id": ["12345", "23456"],
+        "userId": ["1", "2"],
+        "courseId": ["1234", "5678"],
+        "role": ["STUDENT", "STUDENT"],
+    }
+)
+INVITATION_RESPONSE = {
+    "invitations": [
+        {"id": "12345", "userId": "1", "courseId": "1234", "role": "STUDENT"},
+        {"id": "23456", "userId": "2", "courseId": "5678", "role": "STUDENT"},
+    ]
+}
+
+ANNOUNCEMENT_SOLUTION = pd.DataFrame(
+    {
+        "id": ["12345", "23456"],
+        "courseId": ["1234", "5678"],
+        "text": ["Test Announcement #1", "Test Announcement #2"],
+        "state": ["PUBLISHED", "PUBLISHED"],
+        "alternateLink": [
+            "https://classroom.google.com/c/Abc1DeF2Gh",
+            "https://classroom.google.com/c/Bcd2EfG3Hi",
+        ],
+        "creationTime": [
+            pd.to_datetime("2020-04-05 19:41:15.292"),
+            pd.to_datetime("2020-04-05 19:41:15.292"),
+        ],
+        "updateTime": [
+            pd.to_datetime("2020-04-05 19:41:14.305"),
+            pd.to_datetime("2020-04-05 19:41:14.305"),
+        ],
+        "scheduledTime": [
+            pd.to_datetime("2020-04-06 00:00:00.000"),
+            pd.to_datetime("2020-04-06 00:00:00.000"),
+        ],
+        "assigneeMode": ["ALL_STUDENTS", "ALL_STUDENTS"],
+        "creatorUserId": ["555", "333"],
+    }
+)
+ANNOUNCEMENT_RESPONSE = {
+    "announcements": [
+        {
+            "courseId": "1234",
+            "id": "12345",
+            "text": "Test Announcement #1",
+            "materials": [],
+            "state": "PUBLISHED",
+            "alternateLink": "https://classroom.google.com/c/Abc1DeF2Gh",
+            "creationTime": "2020-04-05T19:41:15.292Z",
+            "updateTime": "2020-04-05T19:41:14.305Z",
+            "scheduledTime": "2020-04-06T00:00:00.000Z",
+            "assigneeMode": "ALL_STUDENTS",
+            "individualStudentsOptions": {},
+            "creatorUserId": "555",
+        },
+        {
+            "courseId": "5678",
+            "id": "23456",
+            "text": "Test Announcement #2",
+            "materials": [],
+            "state": "PUBLISHED",
+            "alternateLink": "https://classroom.google.com/c/Bcd2EfG3Hi",
+            "creationTime": "2020-04-05T19:41:15.292Z",
+            "updateTime": "2020-04-05T19:41:14.305Z",
+            "scheduledTime": "2020-04-06T00:00:00.000Z",
+            "assigneeMode": "ALL_STUDENTS",
+            "individualStudentsOptions": {},
+            "creatorUserId": "333",
         },
     ]
 }
@@ -338,11 +422,20 @@ class FakeService:
         def teachers(self):
             return FakeEndpoint(TEACHER_RESPONSE)
 
+        def aliases(self):
+            return FakeEndpoint(ALIAS_RESPONSE)
+
+        def announcements(self):
+            return FakeEndpoint(ANNOUNCEMENT_RESPONSE)
+
     def courses(self):
         return self.Courses(COURSE_RESPONSE)
 
     def orgunits(self):
         return FakeEndpoint(ORG_UNIT_RESPONSE)
+
+    def invitations(self):
+        return FakeEndpoint(INVITATION_RESPONSE)
 
     def new_batch_http_request(self, callback):
         return FakeBatchRequest(callback)
