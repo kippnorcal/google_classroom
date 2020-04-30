@@ -317,9 +317,7 @@ class Guardians(EndPoint):
             self.service.userProfiles()
             .guardians()
             .list(
-                studentId="-",
-                pageToken=next_page_token,
-                pageSize=self.config.PAGE_SIZE,
+                studentId="-", pageToken=next_page_token, pageSize=self.config.PAGE_SIZE
             )
         )
 
@@ -631,3 +629,71 @@ class StudentSubmissions(EndPoint):
             self._parse_gradehistory(record, parsed)
             new_records.append(parsed)
         return new_records
+
+
+class CourseAliases(EndPoint):
+    def __init__(self, service, sql, config):
+        super().__init__(service, sql, config)
+        self.columns = ["courseId", "alias"]
+        self.request_key = "aliases"
+        self.batch_size = config.ALIASES_BATCH_SIZE
+
+    def request_data(self, course_id=None, date=None, next_page_token=None):
+        """Request all aliases for this course."""
+        return (
+            self.service.courses()
+            .aliases()
+            .list(
+                pageToken=next_page_token,
+                courseId=course_id,
+                pageSize=self.config.PAGE_SIZE,
+            )
+        )
+
+
+class Invitations(EndPoint):
+    def __init__(self, service, sql, config):
+        super().__init__(service, sql, config)
+        self.columns = ["id", "userId", "courseId", "role"]
+        self.request_key = "invitations"
+        self.batch_size = config.INVITATIONS_BATCH_SIZE
+
+    def request_data(self, course_id=None, date=None, next_page_token=None):
+        """Request all invitations for this course."""
+        return self.service.invitations().list(
+            pageToken=next_page_token,
+            courseId=course_id,
+            pageSize=self.config.PAGE_SIZE,
+        )
+
+
+class Announcements(EndPoint):
+    def __init__(self, service, sql, config):
+        super().__init__(service, sql, config)
+        self.date_columns = ["creationTime", "updateTime", "scheduledTime"]
+        self.columns = [
+            "id",
+            "courseId",
+            "text",
+            "state",
+            "alternateLink",
+            "creationTime",
+            "updateTime",
+            "scheduledTime",
+            "assigneeMode",
+            "creatorUserId",
+        ]
+        self.request_key = "announcements"
+        self.batch_size = config.ANNOUNCEMENTS_BATCH_SIZE
+
+    def request_data(self, course_id=None, date=None, next_page_token=None):
+        """Request all announcements for this course."""
+        return (
+            self.service.courses()
+            .announcements()
+            .list(
+                pageToken=next_page_token,
+                courseId=course_id,
+                pageSize=self.config.PAGE_SIZE,
+            )
+        )
