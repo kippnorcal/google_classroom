@@ -128,6 +128,18 @@ def main(config):
     if config.PULL_ANNOUNCEMENTS:
         Announcements(classroom_service, sql, config).batch_pull_data(course_ids)
 
+    # Get course aliases
+    if config.PULL_ALIASES:
+        CourseAliases(classroom_service, sql, config).batch_pull_data(course_ids)
+
+    # Get course invitations
+    if config.PULL_INVITATIONS:
+        Invitations(classroom_service, sql, config).batch_pull_data(course_ids)
+
+    # Get course announcements
+    if config.PULL_ANNOUNCEMENTS:
+        Announcements(classroom_service, sql, config).batch_pull_data(course_ids)
+
     # Get course topics
     if config.PULL_TOPICS:
         Topics(classroom_service, sql, config).batch_pull_data(course_ids)

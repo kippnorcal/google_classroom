@@ -192,6 +192,9 @@ class EndPoint:
                                 return
 
             if "nextPageToken" in response:
+                logging.debug(
+                    f"{self.classname()}: Queueing next page from course {course_id}"
+                )
                 next_request = self._generate_request_tuple(
                     course_id, date, response["nextPageToken"], int(page) + 1
                 )
