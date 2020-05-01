@@ -369,83 +369,218 @@ TEACHER_RESPONSE = {
     ]
 }
 
+STUDENT_SUBMISSION_SOLUTION = pd.DataFrame(
+    {
+        "courseId": ["1", "2"],
+        "courseWorkId": ["123", "456"],
+        "id": ["abc", "def"],
+        "userId": ["6", "7"],
+        "creationTime": [
+            pd.to_datetime("2020-04-05 19:41:15.292"),
+            pd.to_datetime("2020-04-01 17:44:34.899"),
+        ],
+        "updateTime": [
+            pd.to_datetime("2020-04-06 19:41:15.292"),
+            pd.to_datetime("2020-04-02 17:44:34.899"),
+        ],
+        "state": ["RETURNED", "RETURNED"],
+        "draftGrade": [30, 80],
+        "assignedGrade": [40, 95],
+        "courseWorkType": ["ASSIGNMENT", "ASSIGNMENT"],
+        "createdTime": [
+            pd.to_datetime("2020-04-02 19:41:15.292"),
+            pd.to_datetime("2020-04-01 17:44:34.899"),
+        ],
+        "turnedInTimestamp": [
+            pd.to_datetime("2020-04-09 19:41:15.292"),
+            pd.to_datetime("2020-04-08 17:44:34.899"),
+        ],
+        "returnedTimestamp": [
+            pd.to_datetime("2020-04-10 19:41:15.292"),
+            pd.to_datetime("2020-04-09 17:44:34.899"),
+        ],
+        "draftMaxPoints": [100, 100],
+        "draftGradeTimestamp": [
+            pd.to_datetime("2020-04-11 19:41:15.292"),
+            pd.to_datetime("2020-04-10 17:44:34.899"),
+        ],
+        "draftGraderId": ["80", "80"],
+        "assignedMaxPoints": [100, 100],
+        "assignedGradeTimestamp": [
+            pd.to_datetime("2020-04-12 19:41:15.292"),
+            pd.to_datetime("2020-04-11 17:44:34.899"),
+        ],
+        "assignedGraderId": ["90", "90"],
+    }
+)
+STUDENT_SUBMISSION_RESPONSE = {
+    "studentSubmissions": [
+        {
+            "courseId": "1",
+            "courseWorkId": "123",
+            "id": "abc",
+            "userId": "6",
+            "creationTime": "2020-04-05T19:41:15.292Z",
+            "updateTime": "2020-04-06T19:41:15.292Z",
+            "state": "RETURNED",
+            "draftGrade": 30,
+            "assignedGrade": 40,
+            "courseWorkType": "ASSIGNMENT",
+            "submissionHistory": [
+                {
+                    "stateHistory": {
+                        "state": "CREATED",
+                        "stateTimestamp": "2020-04-02T19:41:15.292Z",
+                        "actorUserId": "1",
+                    }
+                },
+                {
+                    "stateHistory": {
+                        "state": "TURNED_IN",
+                        "stateTimestamp": "2020-04-09T19:41:15.292Z",
+                        "actorUserId": "1",
+                    }
+                },
+                {
+                    "gradeHistory": {
+                        "maxPoints": 100,
+                        "gradeTimestamp": "2020-04-11T19:41:15.292Z",
+                        "actorUserId": "80",
+                        "gradeChangeType": "DRAFT_GRADE_POINTS_EARNED_CHANGE",
+                    }
+                },
+                {
+                    "stateHistory": {
+                        "state": "RETURNED",
+                        "stateTimestamp": "2020-04-10T19:41:15.292Z",
+                        "actorUserId": "1",
+                    }
+                },
+                {
+                    "gradeHistory": {
+                        "maxPoints": 100,
+                        "gradeTimestamp": "2020-04-12T19:41:15.292Z",
+                        "actorUserId": "90",
+                        "gradeChangeType": "ASSIGNED_GRADE_POINTS_EARNED_CHANGE",
+                    }
+                },
+            ],
+        },
+        {
+            "courseId": "2",
+            "courseWorkId": "456",
+            "id": "def",
+            "userId": "7",
+            "creationTime": "2020-04-01T17:44:34.899Z",
+            "updateTime": "2020-04-02T17:44:34.899Z",
+            "state": "RETURNED",
+            "draftGrade": 80,
+            "assignedGrade": 95,
+            "courseWorkType": "ASSIGNMENT",
+            "submissionHistory": [
+                {
+                    "stateHistory": {
+                        "state": "CREATED",
+                        "stateTimestamp": "2020-04-01T17:44:34.899Z",
+                    }
+                },
+                {
+                    "stateHistory": {
+                        "state": "TURNED_IN",
+                        "stateTimestamp": "2020-04-08T17:44:34.899Z",
+                    }
+                },
+                {
+                    "gradeHistory": {
+                        "pointsEarned": 80,
+                        "maxPoints": 100,
+                        "gradeTimestamp": "2020-04-10T17:44:34.899Z",
+                        "actorUserId": "80",
+                        "gradeChangeType": "DRAFT_GRADE_POINTS_EARNED_CHANGE",
+                    }
+                },
+                {
+                    "stateHistory": {
+                        "state": "RETURNED",
+                        "stateTimestamp": "2020-04-09T17:44:34.899Z",
+                    }
+                },
+                {
+                    "gradeHistory": {
+                        "pointsEarned": 95,
+                        "maxPoints": 100,
+                        "gradeTimestamp": "2020-04-11T17:44:34.899Z",
+                        "actorUserId": "90",
+                        "gradeChangeType": "ASSIGNED_GRADE_POINTS_EARNED_CHANGE",
+                    }
+                },
+            ],
+        },
+    ]
+}
 
-class FakeBatchRequest:
-    def __init__(self, callback):
-        self.callback = callback
-        self.requests = []
-
-    def add(self, request, request_id):
-        self.requests.append((request, request_id))
-
-    def execute(self):
-        for (request, request_id) in self.requests:
-            result = request.execute()
-            self.callback(request_id, result, None)
-
-
-class FakeRequest:
-    def __init__(self, result, *args, **kwargs):
-        self.result = result
-        self.args = args
-        self.kwargs = kwargs
-
-    def execute(self):
-        if "courseId" in self.kwargs:
-            course_id = self.kwargs["courseId"]
-            if course_id is not None:
-                # If a course_id is provided, this splits the results into two courses.
-                key = list(self.result.keys())[0]
-                if course_id == 0:
-                    return {key: self.result[key][:1]}
-                else:
-                    return {key: self.result[key][1:]}
-        return self.result
-
-
-class FakeEndpoint:
-    def __init__(self, result):
-        self.result = result
-
-    def list(self, *args, **kwargs):
-        return FakeRequest(self.result, *args, **kwargs)
-
-
-class FakeService:
-    class Courses(FakeEndpoint):
-        def topics(self):
-            return FakeEndpoint(TOPIC_RESPONSE)
-
-        def students(self):
-            return FakeEndpoint(STUDENT_RESPONSE)
-
-        def teachers(self):
-            return FakeEndpoint(TEACHER_RESPONSE)
-
-        def aliases(self):
-            return FakeEndpoint(ALIAS_RESPONSE)
-
-        def announcements(self):
-            return FakeEndpoint(ANNOUNCEMENT_RESPONSE)
-
-    def courses(self):
-        return self.Courses(COURSE_RESPONSE)
-
-    def orgunits(self):
-        return FakeEndpoint(ORG_UNIT_RESPONSE)
-
-    def invitations(self):
-        return FakeEndpoint(INVITATION_RESPONSE)
-
-    def new_batch_http_request(self, callback):
-        return FakeBatchRequest(callback)
-
-    class UserProfiles:
-        def guardians(self):
-            return FakeEndpoint(GUARDIAN_RESPONSE)
-
-        def guardianInvitations(self):
-            return FakeEndpoint(GUARDIAN_INVITE_RESPONSE)
-
-    def userProfiles(self):
-        return self.UserProfiles()
+COURSEWORK_SOLUTION = pd.DataFrame(
+    {
+        "courseId": ["1", "2"],
+        "id": ["3", "4"],
+        "title": ["title1", "title2"],
+        "description": ["desc1", "desc2"],
+        "state": ["PUBLISHED", "DRAFT"],
+        "alternateLink": ["link1", "link2"],
+        "creationTime": [
+            pd.to_datetime("2020-04-25 19:26:58.798"),
+            pd.to_datetime("2020-04-26 14:26:58.798"),
+        ],
+        "updateTime": [
+            pd.to_datetime("2020-04-27 19:28:20.824"),
+            pd.to_datetime("2020-04-28 14:28:20.824"),
+        ],
+        "dueDate": [None, pd.to_datetime("2020-05-01 06:59:00")],
+        "maxPoints": [100, 100],
+        "workType": ["ASSIGNMENT", "QUIZ"],
+        "assigneeMode": ["ALL_STUDENTS", "ALL_STUDENTS"],
+        "submissionModificationMode": [
+            "MODIFIABLE_UNTIL_TURNED_IN",
+            "MODIFIABLE_UNTIL_TURNED_IN",
+        ],
+        "creatorUserId": ["60", "70"],
+        "topicId": [None, "20"],
+    }
+)
+COURSEWORK_RESPONSE = {
+    "courseWork": [
+        {
+            "courseId": "1",
+            "id": "3",
+            "title": "title1",
+            "description": "desc1",
+            "state": "PUBLISHED",
+            "alternateLink": "link1",
+            "creationTime": "2020-04-25T19:26:58.798Z",
+            "updateTime": "2020-04-27T19:28:20.824Z",
+            "maxPoints": 100,
+            "workType": "ASSIGNMENT",
+            "submissionModificationMode": "MODIFIABLE_UNTIL_TURNED_IN",
+            "assigneeMode": "ALL_STUDENTS",
+            "creatorUserId": "60",
+        },
+        {
+            "courseId": "2",
+            "id": "4",
+            "title": "title2",
+            "description": "desc2",
+            "state": "DRAFT",
+            "alternateLink": "link2",
+            "creationTime": "2020-04-26T14:26:58.798Z",
+            "updateTime": "2020-04-28T14:28:20.824Z",
+            "dueDate": {"year": 2020, "month": 5, "day": 1},
+            "dueTime": {"hours": 6, "minutes": 59},
+            "maxPoints": 100,
+            "workType": "QUIZ",
+            "submissionModificationMode": "MODIFIABLE_UNTIL_TURNED_IN",
+            "assigneeMode": "ALL_STUDENTS",
+            "creatorUserId": "70",
+            "topicId": "20",
+        },
+    ]
+}
