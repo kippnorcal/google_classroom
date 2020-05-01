@@ -18,11 +18,10 @@ jobs:
       run: |
         pip install pipenv
         pipenv install --skip-lock
-    - name: Run linter / formatter
+    - name: Run black
       run: |
-        pipenv install black flake8 --skip-lock
+        pipenv install black --skip-lock
         pipenv run black --check .
-        pipenv run flake8
     - name: Test with pytest
       run: |
         pipenv run pytest tests.py
