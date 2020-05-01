@@ -160,6 +160,7 @@ Optional flags will include different types of pulls (can also be done via env v
 - `--announcements`
 
 Use the flag `--debug` to turn on debug logging.
+Use the flag `--debugfile` to save raw json to a file for backup / auditing.
 
 ### Running Tests
 

@@ -28,6 +28,16 @@ class EndPoint:
         self.request_key = None
         self.table_name = f"GoogleClassroom_{self.classname()}"
 
+    def return_all_data(self):
+        """Returns all the data in the associated table"""
+        try:
+            return pd.read_sql_table(
+                self.table_name, con=self.sql.engine, schema=self.sql.schema
+            )
+        except InvalidRequestError as error:
+            logging.debug(error)
+            return None
+
     def request_data(self, course_id=None, date=None, next_page_token=None):
         """
         Returns a request object for calling the Google Classroom API for that class.
@@ -51,6 +61,7 @@ class EndPoint:
 
     def _process_and_filter_records(self, records):
         """Processes incoming records and converts them into a cleaned dataframe"""
+        logging.debug(f"{self.classname()}: processing {len(records)} records.")
         new_records = self.preprocess_records(records)
         df = pd.json_normalize(new_records)
         df = df.reindex(columns=self.columns)
@@ -66,7 +77,7 @@ class EndPoint:
         logging.debug(
             f"{self.classname()}: inserting {len(df)} records into {self.table_name}."
         )
-        self.sql.insert_into(self.table_name, df)
+        self.sql.insert_into(self.table_name, df, chunksize=10000)
 
     def _delete_local_file(self):
         """Deletes the local debug json file in /data."""
@@ -138,17 +149,14 @@ class EndPoint:
             course_ids: A list of courses that will each get a separate request.
             dates:      A list of dates that will each get a separate request.
             overwite:   If True, drops and overwrites the existing database.
-
-        Returns:
-            all_data:   The results of the request.
         """
         if overwrite:
             self._drop_table()
 
-        if self.config.DEBUG:
+        if self.config.DEBUGFILE:
             self._delete_local_file()
 
-        all_data = None
+        batch_data = []
         quota_exceeded = False
         remaining_requests = []
 
@@ -184,9 +192,6 @@ class EndPoint:
                                 return
 
             if "nextPageToken" in response:
-                logging.debug(
-                    f"{self.classname()}: Queueing next page from course {course_id}"
-                )
                 next_request = self._generate_request_tuple(
                     course_id, date, response["nextPageToken"], int(page) + 1
                 )
@@ -196,14 +201,10 @@ class EndPoint:
             logging.debug(
                 f"{self.classname()}: received {len(records)} records from course {course_id}, date {date}, page {page}"
             )
-            if len(records) > 0:
-                if self.config.DEBUG:
-                    self._write_json_to_file(records)
-                df = self._process_and_filter_records(records)
-                self._write_to_db(df)
-                nonlocal all_data
-                all_data = df if all_data is None else all_data.append(df)
+            nonlocal batch_data
+            batch_data.extend(records)
 
+        logging.info(f"{self.classname()}: Generating requests...")
         request_combinations = list(itertools.product(course_ids, dates))
         # Reverses because the items are taken in order from the back by popping.
         request_combinations.reverse()
@@ -217,6 +218,8 @@ class EndPoint:
                 _, _, _, page = self._get_request_info(remaining_requests[0][1])
                 log += f" On page {page}."
             logging.info(log)
+
+            # Load up a new batch with requests from remaining requests
             batch = self.service.new_batch_http_request(callback=callback)
             current_batch = 0
             while len(remaining_requests) > 0 and current_batch < self.batch_size:
@@ -224,14 +227,22 @@ class EndPoint:
                 (request, request_id) = remaining_requests.pop()
                 batch.add(request, request_id=request_id)
             self.execute_batch_with_retry(batch)
+
+            # Process the results of the batch.
+            if len(batch_data) > 0:
+                if self.config.DEBUGFILE:
+                    self._write_json_to_file(batch_data)
+                df = self._process_and_filter_records(batch_data)
+                self._write_to_db(df)
+                batch_data = []
+
+            # Pause if quota exceeded. 20s because the quota is a sliding time window.
             if quota_exceeded:
                 quota_exceeded = False
                 logging.info(
                     f"{self.classname()}: Quota exceeded. Pausing for 20 seconds..."
                 )
                 time.sleep(20)
-
-        return all_data
 
 
 class OrgUnits(EndPoint):
@@ -372,16 +383,6 @@ class Courses(EndPoint):
         ]
         self.request_key = "courses"
         self.batch_size = config.COURSES_BATCH_SIZE
-
-    def get_course_ids(self):
-        try:
-            courses = pd.read_sql_table(
-                self.table_name, con=self.sql.engine, schema=self.sql.schema
-            )
-            return courses.id.unique()
-        except InvalidRequestError as error:
-            logging.debug(error)
-            return None
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         """Request all active courses."""

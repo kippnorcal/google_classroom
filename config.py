@@ -43,6 +43,9 @@ def get_args():
     parser.add_argument(
         "--debug", help="Set logging level for troubleshooting", action="store_true"
     )
+    parser.add_argument(
+        "--debugfile", help="Log raw json to a file", action="store_true"
+    )
     args, _ = parser.parse_known_args()
     return args
 
@@ -56,6 +59,7 @@ class Config(object):
     SCHOOL_YEAR_START = os.getenv("SCHOOL_YEAR_START")
     DB_TYPE = os.getenv("DB_TYPE")
     DEBUG = args.debug
+    DEBUGFILE = args.debugfile
     PULL_USAGE = os.getenv("PULL_USAGE") == "YES" or args.usage or args.all
     PULL_COURSES = os.getenv("PULL_COURSES") == "YES" or args.courses or args.all
     PULL_TOPICS = os.getenv("PULL_TOPICS") == "YES" or args.topics or args.all
@@ -103,6 +107,7 @@ class Config(object):
 class TestConfig(Config):
     DB_TYPE = "sqlite"
     DEBUG = False
+    DEBUGFILE = False
     PULL_USAGE = True
     PULL_COURSES = True
     PULL_TOPICS = True
