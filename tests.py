@@ -1,8 +1,11 @@
+import os
+import pandas as pd
 from config import TestConfig, db_generator
 from api import (
     Announcements,
     CourseAliases,
     Courses,
+    CourseWork,
     OrgUnits,
     Guardians,
     GuardianInvites,
@@ -10,24 +13,23 @@ from api import (
     Topics,
     Students,
     Teachers,
+    StudentSubmissions,
 )
-import os
-import pandas as pd
+from test_response_class import FakeService
 from test_responses import (
-    FakeService,
     ALIAS_SOLUTION,
-    ORG_UNIT_SOLUTION,
+    ANNOUNCEMENT_SOLUTION,
+    COURSE_SOLUTION,
+    COURSEWORK_SOLUTION,
     GUARDIAN_SOLUTION,
     GUARDIAN_INVITE_SOLUTION,
-    COURSE_SOLUTION,
-    TOPIC_SOLUTION,
-    STUDENT_SOLUTION,
-    TEACHER_SOLUTION,
     INVITATION_SOLUTION,
-    ANNOUNCEMENT_SOLUTION,
+    ORG_UNIT_SOLUTION,
+    STUDENT_SOLUTION,
+    STUDENT_SUBMISSION_SOLUTION,
+    TEACHER_SOLUTION,
+    TOPIC_SOLUTION,
 )
-
-# TODO: Add tests for Coursework and Submissions.
 
 
 class TestEndToEnd:
@@ -100,6 +102,20 @@ class TestEndToEnd:
         self.generic_get_test(
             Announcements(self.service, self.sql, self.config),
             ANNOUNCEMENT_SOLUTION,
+            course_ids=[0, 1],
+        )
+
+    def test_get_submissions(self):
+        self.generic_get_test(
+            StudentSubmissions(self.service, self.sql, self.config),
+            STUDENT_SUBMISSION_SOLUTION,
+            course_ids=[0, 1],
+        )
+
+    def test_get_coursework(self):
+        self.generic_get_test(
+            CourseWork(self.service, self.sql, self.config),
+            COURSEWORK_SOLUTION,
             course_ids=[0, 1],
         )
 
