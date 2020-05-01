@@ -1,0 +1,28 @@
+# This workflow will install Python dependencies and run tests.
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Python application
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: Install dependencies with pipenv
+      run: |
+        pip install pipenv
+        pipenv install --deploy --dev
+    - name: Run linter / formatter
+      run: |
+        pipenv install black flake8
+        pipenv run black --check .
+        pipenv run flake8
+    - name: Test with pytest
+      run: |
+        pipenv run pytest tests.py
