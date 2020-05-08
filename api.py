@@ -199,17 +199,8 @@ class EndPoint:
                     course_id, date, response["nextPageToken"], int(page) + 1
                 )
                 remaining_requests.append(next_request)
-            if self.request_key == "meet123":
-                #print(response)
-                records = response.get("items",[])
-                #print("---")
-                #print(records)
-                #records = records.get("events",[])
-                #print("---")
-                #print(records)
-
-            else:
-                records = response.get(self.request_key, [])
+                
+            records = response.get(self.request_key, [])
 
             logging.debug(
                 f"{self.classname()}: received {len(records)} records from course {course_id}, date {date}, page {page}"
