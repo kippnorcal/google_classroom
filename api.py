@@ -201,7 +201,6 @@ class EndPoint:
                 remaining_requests.append(next_request)
 
             records = response.get(self.request_key, [])
-
             logging.debug(
                 f"{self.classname()}: received {len(records)} records from course {course_id}, date {date}, page {page}"
             )
@@ -702,7 +701,6 @@ class Announcements(EndPoint):
                 pageSize=self.config.PAGE_SIZE,
             )
         )
-
 
 
 class Meet(EndPoint):
