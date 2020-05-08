@@ -13,7 +13,7 @@ def get_args():
     )
     parser.add_argument("--courses", help="Import course lists", action="store_true")
     parser.add_argument("--topics", help="Import course topics", action="store_true")
-    parser.add_argument("--aliases", help="Import course aliases", action="store_true")
+    parser.add_argument("--aliases", help="Import course aliases", action="store_true") 
     parser.add_argument(
         "--coursework", help="Import course assignments", action="store_true"
     )
@@ -40,12 +40,13 @@ def get_args():
     parser.add_argument(
         "--announcements", help="Import course announcements", action="store_true"
     )
+    parser.add_argument("--meet", help="Import Meet data", action="store_true")
     parser.add_argument(
         "--debug", help="Set logging level for troubleshooting", action="store_true"
     )
     parser.add_argument(
         "--debugfile", help="Log raw json to a file", action="store_true"
-    )
+    )   
     args, _ = parser.parse_known_args()
     return args
 
@@ -82,6 +83,7 @@ class Config(object):
     PULL_ANNOUNCEMENTS = (
         os.getenv("PULL_ANNOUNCEMENTS") == "YES" or args.announcements or args.all
     )
+    PULL_MEET = os.getenv("PULL_MEET") == "YES" or args.aliases or args.all
     SENDER_EMAIL = os.getenv("SENDER_EMAIL")
     SENDER_PWD = os.getenv("SENDER_PWD")
     EMAIL_SERVER = os.getenv("EMAIL_SERVER")
@@ -101,6 +103,7 @@ class Config(object):
     ALIASES_BATCH_SIZE = int(os.getenv("ALIASES_BATCH_SIZE") or 1000)
     INVITATIONS_BATCH_SIZE = int(os.getenv("INVITATIONS_BATCH_SIZE") or 1000)
     ANNOUNCEMENTS_BATCH_SIZE = int(os.getenv("ANNOUNCEMENTS_BATCH_SIZE") or 1000)
+    MEET_BATCH_SIZE = int(os.getenv("MEET_BATCH_SIZE") or 1000)
     PAGE_SIZE = int(os.getenv("PAGE_SIZE") or 1000)
 
 

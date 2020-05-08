@@ -199,8 +199,18 @@ class EndPoint:
                     course_id, date, response["nextPageToken"], int(page) + 1
                 )
                 remaining_requests.append(next_request)
+            if self.request_key == "meet123":
+                #print(response)
+                records = response.get("items",[])
+                #print("---")
+                #print(records)
+                #records = records.get("events",[])
+                #print("---")
+                #print(records)
 
-            records = response.get(self.request_key, [])
+            else:
+                records = response.get(self.request_key, [])
+
             logging.debug(
                 f"{self.classname()}: received {len(records)} records from course {course_id}, date {date}, page {page}"
             )
@@ -701,3 +711,52 @@ class Announcements(EndPoint):
                 pageSize=self.config.PAGE_SIZE,
             )
         )
+
+
+
+class Meet(EndPoint):
+    def __init__(self, service, sql, config):
+        super().__init__(service, sql, config)
+        self.date_columns = []
+        self.columns = [
+            "conference_id",
+            "device_type",
+            "display_name",
+            "duration_seconds",
+            "endpoint_id",
+            "identifier",
+            "identifier_type",
+            "ip_address",
+            "is_external",
+            "meeting_code",
+            "organizer_email",
+            "item_time"
+        ]
+        self.request_key = "items"
+        self.batch_size = config.MEET_BATCH_SIZE
+
+    def request_data(self, course_id=None, date=None, next_page_token=None):
+        options = {
+            "applicationName": "meet",
+            "userKey": "all",
+            "eventName": "call_ended",
+            "pageToken": next_page_token
+        }
+        return self.service.activities().list(**options)
+    def preprocess_records(self, records):
+        """Parse the coursework nested json into flat records for insertion
+        in to database table"""
+        new_records = []
+        for record in records:
+            eventrecords = record.get("events")
+            curtime = record.get("id").get("time")
+            for eventrecord in eventrecords:
+                if eventrecord.get("name") == "call_ended":                    
+                    cur = {"item_time":curtime}
+                    for subrecord in eventrecord.get("parameters"):
+                        if subrecord.get("name") in self.columns:
+                            cur[subrecord.get("name")] = subrecord.get("value",subrecord.get("intValue",subrecord.get("boolValue")))
+                    new_records.append(cur)
+        return new_records
+
+    
