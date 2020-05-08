@@ -199,7 +199,7 @@ class EndPoint:
                     course_id, date, response["nextPageToken"], int(page) + 1
                 )
                 remaining_requests.append(next_request)
-                
+
             records = response.get(self.request_key, [])
 
             logging.debug(

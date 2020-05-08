@@ -13,7 +13,7 @@ def get_args():
     )
     parser.add_argument("--courses", help="Import course lists", action="store_true")
     parser.add_argument("--topics", help="Import course topics", action="store_true")
-    parser.add_argument("--aliases", help="Import course aliases", action="store_true") 
+    parser.add_argument("--aliases", help="Import course aliases", action="store_true")
     parser.add_argument(
         "--coursework", help="Import course assignments", action="store_true"
     )
@@ -46,7 +46,7 @@ def get_args():
     )
     parser.add_argument(
         "--debugfile", help="Log raw json to a file", action="store_true"
-    )   
+    )
     args, _ = parser.parse_known_args()
     return args
 
