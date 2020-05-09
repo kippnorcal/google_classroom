@@ -16,8 +16,8 @@ from api import (
     StudentSubmissions,
     StudentUsage,
 )
-from test_response_class import FakeService
-from test_responses import (
+from tests.mock_response import FakeService
+from tests.responses import (
     ALIAS_SOLUTION,
     ANNOUNCEMENT_SOLUTION,
     COURSE_SOLUTION,
@@ -41,8 +41,8 @@ class TestEndToEnd:
         self.service = FakeService()
 
     def teardown(self):
-        if os.path.exists(self.config.SQLITE_FILE):
-            os.remove(self.config.SQLITE_FILE)
+        if os.path.exists(self.config.DB):
+            os.remove(self.config.DB)
 
     def test_get_org_units(self):
         self.generic_get_test(

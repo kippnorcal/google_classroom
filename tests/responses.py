@@ -274,8 +274,8 @@ STUDENT_SOLUTION = pd.DataFrame(
     {
         "courseId": ["123", "123"],
         "userId": ["1", "2"],
-        "profile.name.fullName": ["Test User", "Another User"],
-        "profile.emailAddress": ["test_user@email.com", "another_user@email.com"],
+        "fullName": ["Test User", "Another User"],
+        "emailAddress": ["test_user@email.com", "another_user@email.com"],
     }
 )
 STUDENT_RESPONSE = {
@@ -314,8 +314,8 @@ TEACHER_SOLUTION = pd.DataFrame(
     {
         "courseId": ["111", "333", "444"],
         "userId": ["555", "321", "555"],
-        "profile.name.fullName": ["Boss Lady", "Mr. Teacher", "Mrs. Teacher"],
-        "profile.emailAddress": [
+        "fullName": ["Boss Lady", "Mr. Teacher", "Mrs. Teacher"],
+        "emailAddress": [
             "boss_lady@email.com",
             "mr_teacher@email.com",
             "mrs_teacher@email.com",
@@ -610,7 +610,7 @@ STUDENT_USAGE_RESPONSE = {
         "usageReports": [
             {
                 "date": "2020-02-27",
-                "entity": {"userEmail": "user1@email.com",},
+                "entity": {"userEmail": "user1@email.com"},
                 "parameters": [
                     {
                         "name": "classroom:last_interaction_time",
@@ -620,7 +620,7 @@ STUDENT_USAGE_RESPONSE = {
             },
             {
                 "date": "2020-02-27",
-                "entity": {"userEmail": "user2@email.com",},
+                "entity": {"userEmail": "user2@email.com"},
                 "parameters": [
                     {
                         "name": "classroom:last_interaction_time",
@@ -634,7 +634,7 @@ STUDENT_USAGE_RESPONSE = {
         "usageReports": [
             {
                 "date": "2020-02-28",
-                "entity": {"userEmail": "user3@email.com",},
+                "entity": {"userEmail": "user3@email.com"},
                 "parameters": [
                     {
                         "name": "classroom:last_interaction_time",

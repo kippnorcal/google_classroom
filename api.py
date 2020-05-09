@@ -12,6 +12,19 @@ from timer import elapsed
 
 
 class EndPoint:
+    """
+    A generic endpoint, intended to be overwritten by a subclass to implement details
+    around what URLs to call and how to process incoming data.
+
+    Parameters:
+        service:    A Google API service to use for the request.
+        sql:        A Sqlsorcery object to read and write from the DB.
+        config:     A config object for customizing the request.
+
+    Returns:
+        An instance of the endpoint that can be called to make a request.
+    """
+
     @classmethod
     def classname(cls):
         return cls.__name__
@@ -65,6 +78,11 @@ class EndPoint:
         df = df.reindex(columns=self.columns)
         df = self.filter_data(df)
         df = df.astype("object")
+        df = self._convert_dates(df)
+        return df
+
+    def _convert_dates(self, df):
+        """Convert date columns to the actual date time."""
         if self.date_columns:
             date_types = {col: "datetime64[ns]" for col in self.date_columns}
             df = df.astype(date_types)
@@ -129,7 +147,7 @@ class EndPoint:
             self._generate_request_id(course_id, date, next_page_token, page),
         )
 
-    def execute_batch_with_retry(self, batch):
+    def _execute_batch_with_retry(self, batch):
         """Executes the passed in batch, with retry logi when not in debug."""
         if self.config.DEBUG:
             batch.execute()
@@ -191,9 +209,9 @@ class EndPoint:
                                 return
 
             if "nextPageToken" in response:
-                logging.debug(
-                    f"{self.classname()}: Queueing next page from course {course_id}"
-                )
+                logging_string = f"{self.classname()}: Queueing next page"
+                logging_string += f" from course {course_id}." if course_id else "."
+                logging.debug(logging_string)
                 next_request = self._generate_request_tuple(
                     course_id, date, response["nextPageToken"], int(page) + 1
                 )
@@ -231,7 +249,7 @@ class EndPoint:
                 current_batch += 1
                 (request, request_id) = remaining_requests.pop()
                 batch.add(request, request_id=request_id)
-            self.execute_batch_with_retry(batch)
+            self._execute_batch_with_retry(batch)
 
             # Process the results of the batch.
             if len(batch_data) > 0:
@@ -253,7 +271,6 @@ class EndPoint:
 class OrgUnits(EndPoint):
     def __init__(self, service, sql, config):
         super().__init__(service, sql, config)
-        self.date_columns = []
         self.columns = ["name", "description", "orgUnitPath", "orgUnitId"]
         self.request_key = "organizationUnits"
         self.batch_size = config.ORG_UNIT_BATCH_SIZE
@@ -287,7 +304,6 @@ class StudentUsage(EndPoint):
             return None
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
-        """Request all usage for the given org unit."""
         options = {
             "userKey": "all",
             "date": date,
@@ -299,7 +315,6 @@ class StudentUsage(EndPoint):
         return self.service.userUsageReport().get(**options)
 
     def preprocess_records(self, records):
-        """Parse classroom usage data into a dataframe with one row per user."""
         new_records = []
         for record in records:
             row = {}
@@ -318,13 +333,11 @@ class StudentUsage(EndPoint):
 class Guardians(EndPoint):
     def __init__(self, service, sql, config):
         super().__init__(service, sql, config)
-        self.date_columns = []
         self.columns = ["studentId", "guardianId", "invitedEmailAddress"]
         self.request_key = "guardians"
         self.batch_size = config.GUARDIANS_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
-        """Request all guardians."""
         return (
             self.service.userProfiles()
             .guardians()
@@ -349,7 +362,6 @@ class GuardianInvites(EndPoint):
         self.batch_size = config.GUARDIAN_INVITES_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
-        """Request all pending and complete guardian invites."""
         return (
             self.service.userProfiles()
             .guardianInvitations()
@@ -386,7 +398,6 @@ class Courses(EndPoint):
         self.batch_size = config.COURSES_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
-        """Request all active courses."""
         return self.service.courses().list(
             pageToken=next_page_token,
             courseStates=["ACTIVE"],
@@ -406,7 +417,6 @@ class Topics(EndPoint):
         self.batch_size = config.TOPICS_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
-        """Request all topics for this course."""
         return (
             self.service.courses()
             .topics()
@@ -424,14 +434,13 @@ class Teachers(EndPoint):
         self.columns = [
             "courseId",
             "userId",
-            "profile.name.fullName",
-            "profile.emailAddress",
+            "fullName",
+            "emailAddress",
         ]
         self.request_key = "teachers"
         self.batch_size = config.TEACHERS_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
-        """Request all teachers for this course."""
         return (
             self.service.courses()
             .teachers()
@@ -442,21 +451,21 @@ class Teachers(EndPoint):
             )
         )
 
+    def preprocess_records(self, records):
+        for record in records:
+            record["fullName"] = record.get("profile").get("name").get("fullName")
+            record["emailAddress"] = record.get("profile").get("emailAddress")
+        return records
+
 
 class Students(EndPoint):
     def __init__(self, service, sql, config):
         super().__init__(service, sql, config)
-        self.columns = [
-            "courseId",
-            "userId",
-            "profile.name.fullName",
-            "profile.emailAddress",
-        ]
+        self.columns = ["courseId", "userId", "fullName", "emailAddress"]
         self.request_key = "students"
         self.batch_size = config.STUDENTS_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
-        """Request all students for this course."""
         return (
             self.service.courses()
             .students()
@@ -466,6 +475,12 @@ class Students(EndPoint):
                 pageSize=self.config.PAGE_SIZE,
             )
         )
+
+    def preprocess_records(self, records):
+        for record in records:
+            record["fullName"] = record.get("profile").get("name").get("fullName")
+            record["emailAddress"] = record.get("profile").get("emailAddress")
+        return records
 
 
 class CourseWork(EndPoint):
@@ -493,7 +508,6 @@ class CourseWork(EndPoint):
         self.batch_size = config.COURSEWORK_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
-        """Request all coursework for this course."""
         return (
             self.service.courses()
             .courseWork()
@@ -505,7 +519,6 @@ class CourseWork(EndPoint):
         )
 
     def preprocess_records(self, records):
-        """Parse classroom usage data into a dataframe with one row per user."""
         for record in records:
             if "dueDate" in record:
                 year = record["dueDate"]["year"]
@@ -557,7 +570,6 @@ class StudentSubmissions(EndPoint):
         self.batch_size = config.SUBMISSIONS_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
-        """Request all student submissions for this course."""
         return (
             self.service.courses()
             .courseWork()
@@ -570,7 +582,7 @@ class StudentSubmissions(EndPoint):
             )
         )
 
-    def _parse_statehistory(self, record, parsed):
+    def _parse_state_history(self, record, parsed):
         """Flatten timestamp records from nested state history"""
         submission_history = record.get("submissionHistory")
         if submission_history:
@@ -589,7 +601,7 @@ class StudentSubmissions(EndPoint):
                             "stateTimestamp"
                         )
 
-    def _parse_gradehistory(self, record, parsed):
+    def _parse_grade_history(self, record, parsed):
         """Flatten needed records from nested grade history"""
         submission_history = record.get("submissionHistory")
         if submission_history:
@@ -611,8 +623,6 @@ class StudentSubmissions(EndPoint):
                         parsed["assignedGraderId"] = grade_history.get("actorUserId")
 
     def preprocess_records(self, records):
-        """Parse the coursework nested json into flat records for insertion
-        in to database table"""
         new_records = []
         for record in records:
             parsed = {
@@ -627,8 +637,8 @@ class StudentSubmissions(EndPoint):
                 "assignedGrade": record.get("assignedGrade"),
                 "courseWorkType": record.get("courseWorkType"),
             }
-            self._parse_statehistory(record, parsed)
-            self._parse_gradehistory(record, parsed)
+            self._parse_state_history(record, parsed)
+            self._parse_grade_history(record, parsed)
             new_records.append(parsed)
         return new_records
 
@@ -641,7 +651,6 @@ class CourseAliases(EndPoint):
         self.batch_size = config.ALIASES_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
-        """Request all aliases for this course."""
         return (
             self.service.courses()
             .aliases()
@@ -661,7 +670,6 @@ class Invitations(EndPoint):
         self.batch_size = config.INVITATIONS_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
-        """Request all invitations for this course."""
         return self.service.invitations().list(
             pageToken=next_page_token,
             courseId=course_id,
@@ -689,7 +697,6 @@ class Announcements(EndPoint):
         self.batch_size = config.ANNOUNCEMENTS_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
-        """Request all announcements for this course."""
         return (
             self.service.courses()
             .announcements()
