@@ -106,7 +106,7 @@ class Config(object):
 
 class TestConfig(Config):
     DB_TYPE = "sqlite"
-    DEBUG = False
+    DEBUG = True
     DEBUGFILE = False
     PULL_USAGE = True
     PULL_COURSES = True

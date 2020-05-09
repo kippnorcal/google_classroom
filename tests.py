@@ -14,6 +14,7 @@ from api import (
     Students,
     Teachers,
     StudentSubmissions,
+    StudentUsage,
 )
 from test_response_class import FakeService
 from test_responses import (
@@ -27,6 +28,7 @@ from test_responses import (
     ORG_UNIT_SOLUTION,
     STUDENT_SOLUTION,
     STUDENT_SUBMISSION_SOLUTION,
+    STUDENT_USAGE_SOLUTION,
     TEACHER_SOLUTION,
     TOPIC_SOLUTION,
 )
@@ -45,6 +47,22 @@ class TestEndToEnd:
     def test_get_org_units(self):
         self.generic_get_test(
             OrgUnits(self.service, self.sql, self.config), ORG_UNIT_SOLUTION
+        )
+
+    def test_get_student_usage(self):
+        self.generic_get_test(
+            StudentUsage(self.service, self.sql, self.config, None),
+            STUDENT_USAGE_SOLUTION,
+            dates=["2020-02-27", "2020-02-28"],
+        )
+
+    def test_get_partial_student_usage(self):
+        self.generic_get_test(
+            StudentUsage(self.service, self.sql, self.config, None),
+            STUDENT_USAGE_SOLUTION.loc[
+                STUDENT_USAGE_SOLUTION["AsOfDate"] == pd.to_datetime("2020-02-27")
+            ],
+            dates=["2020-02-27"],
         )
 
     def test_get_guardians(self):
@@ -119,8 +137,8 @@ class TestEndToEnd:
             course_ids=[0, 1],
         )
 
-    def generic_get_test(self, endpoint, solution, course_ids=[None]):
-        endpoint.batch_pull_data(course_ids=course_ids)
+    def generic_get_test(self, endpoint, solution, course_ids=[None], dates=[None]):
+        endpoint.batch_pull_data(course_ids=course_ids, dates=dates)
         result = pd.read_sql_table(
             endpoint.table_name, con=self.sql.engine, schema=self.sql.schema
         )
