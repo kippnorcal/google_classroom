@@ -8,7 +8,6 @@ verify_ssl = true
 [packages]
 sqlsorcery = {extras = ["mssql", "postgres"],version = "*"}
 google-api-python-client = "*"
-google-auth-httplib2 = "*"
 google-auth-oauthlib = "*"
 tenacity = "*"
 pytest = "*"
