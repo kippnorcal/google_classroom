@@ -115,7 +115,7 @@ https://www.googleapis.com/auth/classroom.guardianlinks.students,
 https://www.googleapis.com/auth/classroom.profile.emails,
 https://www.googleapis.com/auth/classroom.rosters,
 https://www.googleapis.com/auth/classroom.student-submissions.students.readonly,
-https://www.googleapis.com/auth/classroom.topics
+https://www.googleapis.com/auth/classroom.topics,
 https://www.googleapis.com/auth/admin.reports.audit.readonly
 ```
 

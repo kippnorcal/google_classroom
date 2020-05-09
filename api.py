@@ -719,7 +719,7 @@ class Meet(EndPoint):
             "is_external",
             "meeting_code",
             "organizer_email",
-            "item_time"
+            "item_time",
         ]
         self.request_key = "items"
         self.batch_size = config.MEET_BATCH_SIZE
@@ -729,9 +729,10 @@ class Meet(EndPoint):
             "applicationName": "meet",
             "userKey": "all",
             "eventName": "call_ended",
-            "pageToken": next_page_token
+            "pageToken": next_page_token,
         }
         return self.service.activities().list(**options)
+
     def preprocess_records(self, records):
         """Parse the coursework nested json into flat records for insertion
         in to database table"""
@@ -740,12 +741,13 @@ class Meet(EndPoint):
             eventrecords = record.get("events")
             curtime = record.get("id").get("time")
             for eventrecord in eventrecords:
-                if eventrecord.get("name") == "call_ended":                    
-                    cur = {"item_time":curtime}
+                if eventrecord.get("name") == "call_ended":
+                    cur = {"item_time": curtime}
                     for subrecord in eventrecord.get("parameters"):
                         if subrecord.get("name") in self.columns:
-                            cur[subrecord.get("name")] = subrecord.get("value",subrecord.get("intValue",subrecord.get("boolValue")))
+                            cur[subrecord.get("name")] = subrecord.get(
+                                "value",
+                                subrecord.get("intValue", subrecord.get("boolValue")),
+                            )
                     new_records.append(cur)
         return new_records
-
-    

@@ -23,7 +23,7 @@ from api import (
     StudentUsage,
     Teachers,
     Topics,
-    Meet
+    Meet,
 )
 from config import Config, db_generator
 from mailer import Mailer
@@ -57,7 +57,7 @@ def get_credentials(config):
         "https://www.googleapis.com/auth/classroom.rosters",
         "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly",
         "https://www.googleapis.com/auth/classroom.topics",
-        "https://www.googleapis.com/auth/admin.reports.audit.readonly"
+        "https://www.googleapis.com/auth/admin.reports.audit.readonly",
     ]
     return service_account.Credentials.from_service_account_file(
         "service.json", scopes=SCOPES, subject=config.ACCOUNT_EMAIL
@@ -165,6 +165,7 @@ def main(config):
     # Get Meet data
     if config.PULL_MEET:
         Meet(admin_reports_service, sql, config).batch_pull_data()
+
 
 if __name__ == "__main__":
     try:
