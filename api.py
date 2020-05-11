@@ -720,11 +720,13 @@ class Meet(EndPoint):
             "meeting_code",
             "organizer_email",
             "item_time",
+            "event_name",
         ]
         self.request_key = "items"
         self.batch_size = config.MEET_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
+        """Request Google Meet events (currently only call_ended)"""
         options = {
             "applicationName": "meet",
             "userKey": "all",
@@ -734,18 +736,22 @@ class Meet(EndPoint):
         return self.service.activities().list(**options)
 
     def preprocess_records(self, records):
+        """Pull out parameter data from the returned Google Meet call event"""
         new_records = []
         for record in records:
-            eventrecords = record.get("events")
-            curtime = record.get("id").get("time")
-            for eventrecord in eventrecords:
-                if eventrecord.get("name") == "call_ended":
-                    cur = {"item_time": curtime}
-                    for subrecord in eventrecord.get("parameters"):
-                        if subrecord.get("name") in self.columns:
-                            cur[subrecord.get("name")] = subrecord.get(
-                                "value",
-                                subrecord.get("intValue", subrecord.get("boolValue")),
-                            )
-                    new_records.append(cur)
+            event_records = record.get("events")
+            item_time = record.get("id").get("time")
+            for event_record in event_records:
+                event_name = event_record.get("name")
+                if event_name == "call_ended":
+                    new_record = {"item_time": item_time, "event_name": event_name}
+                    for subrecord in event_record.get("parameters"):
+                        name = subrecord.get("name")
+                        value = (
+                            subrecord.get("value")
+                            or subrecord.get("intValue")
+                            or subrecord.get("boolValue")
+                        )
+                        new_record[name] = value
+                    new_records.append(new_record)
         return new_records
