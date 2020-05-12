@@ -701,3 +701,57 @@ class Announcements(EndPoint):
                 pageSize=self.config.PAGE_SIZE,
             )
         )
+
+
+class Meet(EndPoint):
+    def __init__(self, service, sql, config):
+        super().__init__(service, sql, config)
+        self.date_columns = []
+        self.columns = [
+            "conference_id",
+            "device_type",
+            "display_name",
+            "duration_seconds",
+            "endpoint_id",
+            "identifier",
+            "identifier_type",
+            "ip_address",
+            "is_external",
+            "meeting_code",
+            "organizer_email",
+            "item_time",
+            "event_name",
+        ]
+        self.request_key = "items"
+        self.batch_size = config.MEET_BATCH_SIZE
+
+    def request_data(self, course_id=None, date=None, next_page_token=None):
+        """Request Google Meet events (currently only call_ended)"""
+        options = {
+            "applicationName": "meet",
+            "userKey": "all",
+            "eventName": "call_ended",
+            "pageToken": next_page_token,
+        }
+        return self.service.activities().list(**options)
+
+    def preprocess_records(self, records):
+        """Pull out parameter data from the returned Google Meet call event"""
+        new_records = []
+        for record in records:
+            event_records = record.get("events")
+            item_time = record.get("id").get("time")
+            for event_record in event_records:
+                event_name = event_record.get("name")
+                if event_name == "call_ended":
+                    new_record = {"item_time": item_time, "event_name": event_name}
+                    for subrecord in event_record.get("parameters"):
+                        name = subrecord.get("name")
+                        value = (
+                            subrecord.get("value")
+                            or subrecord.get("intValue")
+                            or subrecord.get("boolValue")
+                        )
+                        new_record[name] = value
+                    new_records.append(new_record)
+        return new_records

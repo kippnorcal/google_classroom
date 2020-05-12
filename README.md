@@ -50,6 +50,7 @@ PULL_GUARDIAN_INVITES=
 PULL_ALIASES=
 PULL_INVITATIONS=
 PULL_ANNOUNCEMENTS=
+PULL_MEET=
 
 # (Optional) Batch parameters. Can be configured and changed to optimize performance.
 # *_BATCH_SIZE is the number of dates or courses to batch at a time. MAX: 1000
@@ -67,6 +68,7 @@ GUARDIAN_INVITES_BATCH_SIZE=
 ALIASES_BATCH_SIZE=
 INVITATIONS_BATCH_SIZE=
 ANNOUNCEMENTS_BATCH_SIZE=
+MEET_BATCH_SIZE=
 PAGE_SIZE=The number of items to page at once.
 
 # Email notification variables
@@ -113,7 +115,8 @@ https://www.googleapis.com/auth/classroom.guardianlinks.students,
 https://www.googleapis.com/auth/classroom.profile.emails,
 https://www.googleapis.com/auth/classroom.rosters,
 https://www.googleapis.com/auth/classroom.student-submissions.students.readonly,
-https://www.googleapis.com/auth/classroom.topics
+https://www.googleapis.com/auth/classroom.topics,
+https://www.googleapis.com/auth/admin.reports.audit.readonly
 ```
 
 ### Running the job
@@ -158,6 +161,7 @@ Optional flags will include different types of pulls (can also be done via env v
 - `--aliases`
 - `--invitations`
 - `--announcements`
+- `--meet`
 
 Use the flag `--debug` to turn on debug logging.
 Use the flag `--debugfile` to save raw json to a file for backup / auditing.
