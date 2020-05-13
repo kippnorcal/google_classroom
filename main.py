@@ -85,10 +85,9 @@ def main(config):
             start_date = last_date + timedelta(days=1)
         else:
             start_date = datetime.strptime(config.SCHOOL_YEAR_START, "%Y-%m-%d")
-        date_range = pd.date_range(start=start_date, end=datetime.today()).strftime(
-            "%Y-%m-%d"
-        )
-        usage.batch_pull_data(dates=date_range, overwrite=False)
+        date_range = pd.date_range(start=start_date, end=datetime.today())
+        date_range_string = date_range.strftime("%Y-%m-%d")
+        usage.batch_pull_data(dates=date_range_string, overwrite=False)
 
     # Get guardians
     if config.PULL_GUARDIANS:
@@ -115,10 +114,6 @@ def main(config):
     ):
         courses = Courses(classroom_service, sql, config).return_all_data()
         course_ids = courses.id.unique()
-
-    # Get course aliases
-    if config.PULL_ALIASES:
-        CourseAliases(classroom_service, sql, config).batch_pull_data(course_ids)
 
     # Get course invitations
     if config.PULL_INVITATIONS:

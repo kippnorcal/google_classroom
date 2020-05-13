@@ -1,4 +1,4 @@
-from test_responses import (
+from tests.responses import (
     ALIAS_RESPONSE,
     ANNOUNCEMENT_RESPONSE,
     COURSE_RESPONSE,

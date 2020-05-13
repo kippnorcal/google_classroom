@@ -55,12 +55,25 @@ class Config(object):
     """Base configuration object"""
 
     args = get_args()
+
+    # General config
     ACCOUNT_EMAIL = os.getenv("ACCOUNT_EMAIL")
     STUDENT_ORG_UNIT = os.getenv("STUDENT_ORG_UNIT")
     SCHOOL_YEAR_START = os.getenv("SCHOOL_YEAR_START")
+
+    # DB config
     DB_TYPE = os.getenv("DB_TYPE")
+    DB_SERVER = os.getenv("DB_SERVER")
+    DB = os.getenv("DB")
+    DB_USER = os.getenv("DB_USER")
+    DB_PWD = os.getenv("DB_PWD")
+    DB_SCHEMA = os.getenv("DB_SCHEMA")
+
+    # Debug config
     DEBUG = args.debug
     DEBUGFILE = args.debugfile
+
+    # Which endpoints to pull data from
     PULL_USAGE = os.getenv("PULL_USAGE") == "YES" or args.usage or args.all
     PULL_COURSES = os.getenv("PULL_COURSES") == "YES" or args.courses or args.all
     PULL_TOPICS = os.getenv("PULL_TOPICS") == "YES" or args.topics or args.all
@@ -84,12 +97,16 @@ class Config(object):
         os.getenv("PULL_ANNOUNCEMENTS") == "YES" or args.announcements or args.all
     )
     PULL_MEET = os.getenv("PULL_MEET") == "YES" or args.aliases or args.all
+
+    # Email configuration
     SENDER_EMAIL = os.getenv("SENDER_EMAIL")
     SENDER_PWD = os.getenv("SENDER_PWD")
     EMAIL_SERVER = os.getenv("EMAIL_SERVER")
     EMAIL_PORT = os.getenv("EMAIL_PORT")
     RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL")
     DISABLE_MAILER = os.getenv("DISABLE_MAILER") == "YES"
+
+    # Endpoint configuration
     ORG_UNIT_BATCH_SIZE = int(os.getenv("ORG_UNIT_BATCH_SIZE") or 1000)
     USAGE_BATCH_SIZE = int(os.getenv("USAGE_BATCH_SIZE") or 1000)
     COURSES_BATCH_SIZE = int(os.getenv("COURSES_BATCH_SIZE") or 1000)
@@ -125,7 +142,12 @@ class TestConfig(Config):
     PULL_ANNOUNCEMENTS = True
     DISABLE_MAILER = True
     SCHOOL_YEAR_START = "2020-01-01"
-    SQLITE_FILE = "tests.db"
+    DB_TYPE = "sqlite"
+    DB_SERVER = None
+    DB = "tests.db"
+    DB_USER = None
+    DB_PWD = None
+    DB_SCHEMA = None
     STUDENT_ORG_UNIT = "Test Organization 2"
     ORG_UNIT_BATCH_SIZE = 1000
     USAGE_BATCH_SIZE = 1000
@@ -145,11 +167,19 @@ class TestConfig(Config):
 
 def db_generator(config):
     db_type = config.DB_TYPE
+    default_config = {
+        "schema": config.DB_SCHEMA,
+        "server": config.DB_SERVER,
+        "port": None,
+        "db": config.DB,
+        "user": config.DB_USER,
+        "pwd": config.DB_PWD,
+    }
     if db_type == "mssql":
-        return MSSQL()
+        return MSSQL(**default_config)
     elif db_type == "postgres":
-        return PostgreSQL()
+        return PostgreSQL(**default_config)
     elif db_type == "sqlite":
-        return SQLite(path=config.SQLITE_FILE)
+        return SQLite(path=config.DB)
     else:
         raise Exception()
