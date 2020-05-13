@@ -1,11 +1,9 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import itertools
 import json
 import logging
-import math
 import os
 import time
-from googleapiclient.http import HttpError
 import pandas as pd
 from tenacity import stop_after_attempt, wait_exponential, Retrying
 from sqlalchemy.schema import DropTable
@@ -47,8 +45,8 @@ class EndPoint:
 
     def preprocess_records(self, records):
         """
-        Any preprocessing that needs to be done to records before they are mapped to columns.
-        Intended to be overridden by subclasses as needed.
+        Any preprocessing that needs to be done to records before they are mapped to
+        columns. Intended to be overridden by subclasses as needed.
         """
         return records
 
@@ -118,7 +116,10 @@ class EndPoint:
         Should always reverse `_generate_request_id`
         """
 
-        course_id, date, next_page_token, page = request_id.split(";")
+        values = request_id.split(";")
+        cleaned_values = [None if val == "None" else val for val in values]
+        course_id, date, next_page_token, page = cleaned_values
+
         return course_id, date, next_page_token, page
 
     def _generate_request_tuple(self, course_id, date, next_page_token, page):
@@ -163,8 +164,6 @@ class EndPoint:
         def callback(request_id, response, exception):
             """A local callback for batch requests when they have completed."""
             course_id, date, next_page_token, page = self._get_request_info(request_id)
-            if next_page_token == "None":
-                next_page_token = None
 
             if exception:
                 status = exception.resp.status
@@ -188,7 +187,7 @@ class EndPoint:
                             key = item["key"]
                             value = item["value"]
                             if key == "application" and value == "classroom":
-                                logging.debug(f"Ignoring responses with partial data.")
+                                logging.debug("Ignoring responses with partial data.")
                                 return
 
             if "nextPageToken" in response:
@@ -201,9 +200,12 @@ class EndPoint:
                 remaining_requests.append(next_request)
 
             records = response.get(self.request_key, [])
-            logging.debug(
-                f"{self.classname()}: received {len(records)} records from course {course_id}, date {date}, page {page}"
-            )
+            logging_string = f"{self.classname()}: received {len(records)} records"
+            logging_string += f", course {course_id}" if course_id else ""
+            logging_string += f", date {date}" if date else ""
+            logging_string += f", page {page}" if page else ""
+            logging_string += "."
+            logging.debug(logging_string)
             nonlocal batch_data
             batch_data.extend(records)
 
@@ -280,7 +282,8 @@ class StudentUsage(EndPoint):
                 self.table_name, con=self.sql.engine, schema=self.sql.schema
             )
             return usage.AsOfDate.max() if usage.AsOfDate.count() > 0 else None
-        except:
+        except ValueError:
+            # Table doesn't yet exist.
             return None
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
