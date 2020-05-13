@@ -267,8 +267,8 @@ class OrgUnits(EndPoint):
 class StudentUsage(EndPoint):
     def __init__(self, service, sql, config, org_unit_id):
         super().__init__(service, sql, config)
-        self.date_columns = ["AsOfDate", "LastUsedTime"]
-        self.columns = ["Email", "AsOfDate", "LastUsedTime"]
+        self.date_columns = ["AsOfDate", "LastUsedTime", "ImportDate"]
+        self.columns = ["Email", "AsOfDate", "LastUsedTime", "ImportDate"]
         self.org_unit_id = org_unit_id
         self.request_key = "usageReports"
         self.batch_size = config.USAGE_BATCH_SIZE
@@ -292,7 +292,6 @@ class StudentUsage(EndPoint):
             "parameters": "classroom:last_interaction_time",
         }
         if self.org_unit_id:
-            # This is the CleverStudents org unit ID
             options["orgUnitID"] = self.org_unit_id
         return self.service.userUsageReport().get(**options)
 
@@ -303,18 +302,14 @@ class StudentUsage(EndPoint):
             row = {}
             row["Email"] = record.get("entity").get("userEmail")
             row["AsOfDate"] = record.get("date")
-            row["LastUsedTime"] = self._parse_classroom_last_used(
-                record.get("parameters")
-            )
+            row["LastUsedTime"] = self._get_date_from_params(record.get("parameters"))
             row["ImportDate"] = datetime.today().strftime("%Y-%m-%d")
             new_records.append(row)
         return new_records
 
-    def _parse_classroom_last_used(self, parameters):
-        """Get classroom last interaction time from parameters list."""
+    def _get_date_from_params(self, parameters):
         for parameter in parameters:
-            if parameter.get("name") == "classroom:last_interaction_time":
-                return parameter.get("datetimeValue")
+            return parameter.get("datetimeValue")
 
 
 class Guardians(EndPoint):

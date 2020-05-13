@@ -9,6 +9,7 @@ from test_responses import (
     ORG_UNIT_RESPONSE,
     STUDENT_RESPONSE,
     STUDENT_SUBMISSION_RESPONSE,
+    STUDENT_USAGE_RESPONSE,
     TEACHER_RESPONSE,
     TOPIC_RESPONSE,
 )
@@ -44,6 +45,9 @@ class FakeRequest:
                     return {key: self.result[key][:1]}
                 else:
                     return {key: self.result[key][1:]}
+        if "date" in self.kwargs:
+            date = self.kwargs["date"]
+            return self.result.get(date)
         return self.result
 
 
@@ -52,6 +56,9 @@ class FakeEndpoint:
         self.result = result
 
     def list(self, *args, **kwargs):
+        return FakeRequest(self.result, *args, **kwargs)
+
+    def get(self, *args, **kwargs):
         return FakeRequest(self.result, *args, **kwargs)
 
 
@@ -100,3 +107,6 @@ class FakeService:
 
     def userProfiles(self):
         return self.UserProfiles()
+
+    def userUsageReport(self):
+        return FakeEndpoint(STUDENT_USAGE_RESPONSE)
