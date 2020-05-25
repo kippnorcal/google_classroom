@@ -711,7 +711,7 @@ class Announcements(EndPoint):
 class Meet(EndPoint):
     def __init__(self, service, sql, config):
         super().__init__(service, sql, config)
-        self.date_columns = []
+        self.date_columns = ["item_time"]
         self.columns = [
             "conference_id",
             "device_type",
