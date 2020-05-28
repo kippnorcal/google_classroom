@@ -3,7 +3,7 @@
 if [[ $1 = "--test" ]]
 then
     echo "Running tests."
-    exec pipenv run py.test -s -v tests.py
+    exec pipenv run pytest -s -v
 else
     echo "Starting loading script."
     exec pipenv run python main.py $@
