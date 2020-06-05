@@ -645,3 +645,96 @@ STUDENT_USAGE_RESPONSE = {
         ],
     },
 }
+
+MEET_SOLUTION = pd.DataFrame(
+    {
+        "conference_id": ["123ABC", "123ABC", "DEF456"],
+        "device_type": ["web", "web", "android"],
+        "display_name": ["Name", "Name2", "Name3"],
+        "duration_seconds": ["1000", "1500", "2000"],
+        "endpoint_id": ["abcde", "bcdef", "cdefg"],
+        "identifier": ["person@email.com", "person@email.com", "person2@email.com"],
+        "identifier_type": ["email_address", "email_address", "email_address"],
+        "ip_address": ["1:1:1:1", "1:1:1:1", "2:2:2:2"],
+        "is_external": [False, False, True],
+        "meeting_code": ["YUIOP", "YUIOP", "ASDFG"],
+        "organizer_email": [
+            "organizer@email.com",
+            "organizer2@email.com",
+            "organizer@email.com",
+        ],
+        "item_time": [
+            pd.to_datetime("2020-05-23 17:42:18.591"),
+            pd.to_datetime("2020-05-24 18:42:18.591"),
+            pd.to_datetime("2020-05-25 19:42:18.591"),
+        ],
+        "event_name": ["call_ended", "call_ended", "call_ended"],
+    }
+)
+MEET_RESPONSE = {
+    "items": [
+        {
+            "id": {"time": "2020-05-23T17:42:18.591Z"},
+            "events": [
+                {
+                    "name": "call_ended",
+                    "parameters": [
+                        {"name": "identifier_type", "value": "email_address"},
+                        {"name": "endpoint_id", "value": "abcde"},
+                        {"name": "device_type", "value": "web"},
+                        {"name": "duration_seconds", "intValue": "1000"},
+                        {"name": "identifier", "value": "person@email.com"},
+                        {"name": "organizer_email", "value": "organizer@email.com"},
+                        {"name": "ip_address", "value": "1:1:1:1"},
+                        {"name": "display_name", "value": "Name"},
+                        {"name": "conference_id", "value": "123ABC"},
+                        {"name": "meeting_code", "value": "YUIOP"},
+                        {"name": "is_external", "boolValue": False},
+                    ],
+                }
+            ],
+        },
+        {
+            "id": {"time": "2020-05-24T18:42:18.591Z"},
+            "events": [
+                {
+                    "name": "call_ended",
+                    "parameters": [
+                        {"name": "identifier_type", "value": "email_address"},
+                        {"name": "endpoint_id", "value": "bcdef"},
+                        {"name": "device_type", "value": "web"},
+                        {"name": "duration_seconds", "intValue": "1500"},
+                        {"name": "identifier", "value": "person@email.com"},
+                        {"name": "organizer_email", "value": "organizer2@email.com"},
+                        {"name": "ip_address", "value": "1:1:1:1"},
+                        {"name": "display_name", "value": "Name2"},
+                        {"name": "conference_id", "value": "123ABC"},
+                        {"name": "meeting_code", "value": "YUIOP"},
+                        {"name": "is_external", "boolValue": False},
+                    ],
+                }
+            ],
+        },
+        {
+            "id": {"time": "2020-05-25T19:42:18.591Z"},
+            "events": [
+                {
+                    "name": "call_ended",
+                    "parameters": [
+                        {"name": "identifier_type", "value": "email_address"},
+                        {"name": "endpoint_id", "value": "cdefg"},
+                        {"name": "device_type", "value": "android"},
+                        {"name": "duration_seconds", "intValue": "2000"},
+                        {"name": "identifier", "value": "person2@email.com"},
+                        {"name": "organizer_email", "value": "organizer@email.com"},
+                        {"name": "ip_address", "value": "2:2:2:2"},
+                        {"name": "display_name", "value": "Name3"},
+                        {"name": "conference_id", "value": "DEF456"},
+                        {"name": "meeting_code", "value": "ASDFG"},
+                        {"name": "is_external", "boolValue": True},
+                    ],
+                }
+            ],
+        },
+    ],
+}

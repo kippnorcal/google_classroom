@@ -10,6 +10,7 @@ from api import (
     Guardians,
     GuardianInvites,
     Invitations,
+    Meet,
     Topics,
     Students,
     Teachers,
@@ -31,6 +32,7 @@ from tests.responses import (
     STUDENT_USAGE_SOLUTION,
     TEACHER_SOLUTION,
     TOPIC_SOLUTION,
+    MEET_SOLUTION,
 )
 
 
@@ -80,6 +82,9 @@ class TestEndToEnd:
         self.generic_get_test(
             Courses(self.service, self.sql, self.config), COURSE_SOLUTION
         )
+
+    def test_get_meet(self):
+        self.generic_get_test(Meet(self.service, self.sql, self.config), MEET_SOLUTION)
 
     def test_get_topics(self):
         self.generic_get_test(

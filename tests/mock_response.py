@@ -6,6 +6,7 @@ from tests.responses import (
     GUARDIAN_INVITE_RESPONSE,
     GUARDIAN_RESPONSE,
     INVITATION_RESPONSE,
+    MEET_RESPONSE,
     ORG_UNIT_RESPONSE,
     STUDENT_RESPONSE,
     STUDENT_SUBMISSION_RESPONSE,
@@ -110,3 +111,6 @@ class FakeService:
 
     def userUsageReport(self):
         return FakeEndpoint(STUDENT_USAGE_RESPONSE)
+
+    def activities(self):
+        return FakeEndpoint(MEET_RESPONSE)

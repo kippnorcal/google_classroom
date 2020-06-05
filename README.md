@@ -168,12 +168,12 @@ Use the flag `--debugfile` to save raw json to a file for backup / auditing.
 
 ### Running Tests
 
-Tests are located in tests,py, and can be run with either of the following commands:
+Tests are located in test_all,py, and can be run with either of the following commands:
 
 Locally:
 
 ```
-pipenv run py.test -s -v tests.py
+pipenv run pytest -s -v
 ```
 
 On Docker:
