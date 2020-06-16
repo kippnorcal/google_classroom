@@ -565,6 +565,7 @@ class StudentSubmissions(EndPoint):
             "assignedMaxPoints",
             "assignedGradeTimestamp",
             "assignedGraderId",
+            "late",
         ]
         self.request_key = "studentSubmissions"
         self.batch_size = config.SUBMISSIONS_BATCH_SIZE
@@ -636,6 +637,7 @@ class StudentSubmissions(EndPoint):
                 "draftGrade": record.get("draftGrade"),
                 "assignedGrade": record.get("assignedGrade"),
                 "courseWorkType": record.get("courseWorkType"),
+                "late": record.get("late", False),
             }
             self._parse_state_history(record, parsed)
             self._parse_grade_history(record, parsed)

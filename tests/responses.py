@@ -411,6 +411,7 @@ STUDENT_SUBMISSION_SOLUTION = pd.DataFrame(
             pd.to_datetime("2020-04-11 17:44:34.899"),
         ],
         "assignedGraderId": ["90", "90"],
+        "late": [True, False],
     }
 )
 STUDENT_SUBMISSION_RESPONSE = {
@@ -423,6 +424,7 @@ STUDENT_SUBMISSION_RESPONSE = {
             "creationTime": "2020-04-05T19:41:15.292Z",
             "updateTime": "2020-04-06T19:41:15.292Z",
             "state": "RETURNED",
+            "late": True,
             "draftGrade": 30,
             "assignedGrade": 40,
             "courseWorkType": "ASSIGNMENT",
