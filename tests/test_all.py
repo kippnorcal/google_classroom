@@ -1,4 +1,3 @@
-import os
 import pandas as pd
 from config import TestConfig, db_generator
 from api import (
@@ -17,8 +16,8 @@ from api import (
     StudentSubmissions,
     StudentUsage,
 )
-from tests.mock_response import FakeService
-from tests.responses import (
+from mock_response import FakeService
+from responses import (
     ALIAS_SOLUTION,
     ANNOUNCEMENT_SOLUTION,
     COURSE_SOLUTION,
@@ -41,10 +40,6 @@ class TestEndToEnd:
         self.config = TestConfig
         self.sql = db_generator(self.config)
         self.service = FakeService()
-
-    def teardown(self):
-        if os.path.exists(self.config.DB):
-            os.remove(self.config.DB)
 
     def test_get_org_units(self):
         self.generic_get_test(

@@ -5,6 +5,7 @@
 - Python3.7
 - [Pipenv](https://pipenv.readthedocs.io/en/latest/)
 - [Docker](https://www.docker.com/)
+- [Docker-Compose](https://docs.docker.com/compose/install/)
 
 ## Getting Started
 
@@ -18,9 +19,12 @@ git clone https://github.com/kipp-bayarea/google_classroom.git
 
 2. Install dependencies
 
-- Docker can be installed directly from the website at docker.com.
+- Docker can be installed from docker.com.
+- Docker-Compose can also be installed via the website, or via `pip`.
 
 3. Create .env file with project secrets
+
+The environment file should fit the following template:
 
 ```
 # Basic Configuration Info
@@ -119,31 +123,40 @@ https://www.googleapis.com/auth/classroom.topics,
 https://www.googleapis.com/auth/admin.reports.audit.readonly
 ```
 
-### Running the job
+## Running the job
 
-Build the Docker image
+### Locally
+
+Install the dependencies.
 
 ```
-docker build -t google_classroom .
+pipenv install --skip-lock
 ```
 
-Run the job
+Run the job.
+
+```
+pipenv run python main.py
+```
+
+### Using Docker
+
+Build the Docker image.
+
+```
+docker build -f google_classroom/Dockerfile -t google_classroom .
+```
+
+Run the Docker image.
 
 ```
 docker run --rm -it google_classroom
 ```
 
-Run the job using a database on localhost
+Run the Docker image using a local database.
 
 ```
 docker run --rm -it --network host google_classroom
-```
-
-Run the job locally
-
-```
-pipenv install --skip-lock (first time)
-pipenv run python main.py
 ```
 
 Optional flags will include different types of pulls (can also be done via env variables):
@@ -166,25 +179,18 @@ Optional flags will include different types of pulls (can also be done via env v
 Use the flag `--debug` to turn on debug logging.
 Use the flag `--debugfile` to save raw json to a file for backup / auditing.
 
-### Running Tests
-
-Tests are located in test_all,py, and can be run with either of the following commands:
-
-Locally:
+### Using Docker Compose:
 
 ```
-pipenv run pytest -s -v
+docker-compose up --build
 ```
 
-On Docker:
+## Running tests
 
 ```
-docker build -t google_classroom .
-docker run --rm -it google_classroom --test
+./run_tests
 ```
 
-When making changes, please run tests to make sure you have not broken anything.
-
-### Yearly maintenance
+## Yearly maintenance
 
 1. Confirm the org unit ID (used to get Student Usage) in the .env.

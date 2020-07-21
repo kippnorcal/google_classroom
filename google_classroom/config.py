@@ -125,7 +125,13 @@ class Config(object):
 
 
 class TestConfig(Config):
-    DB_TYPE = "sqlite"
+    DB_TYPE = "mssql"
+    DB_SERVER = "database"
+    DB = "master"
+    DB_USER = "sa"
+    DB_PWD = "Google_Classroom_Pass1"
+    DB_SCHEMA = "dbo"
+    DB_PORT = "1433"
     DEBUG = True
     DEBUGFILE = False
     PULL_USAGE = True
@@ -142,12 +148,6 @@ class TestConfig(Config):
     PULL_ANNOUNCEMENTS = True
     DISABLE_MAILER = True
     SCHOOL_YEAR_START = "2020-01-01"
-    DB_TYPE = "sqlite"
-    DB_SERVER = None
-    DB = "tests.db"
-    DB_USER = None
-    DB_PWD = None
-    DB_SCHEMA = None
     STUDENT_ORG_UNIT = "Test Organization 2"
     ORG_UNIT_BATCH_SIZE = 1000
     USAGE_BATCH_SIZE = 1000
