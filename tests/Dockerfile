@@ -12,5 +12,6 @@ COPY Pipfile .
 RUN pipenv install --skip-lock
 COPY google_classroom/ .
 COPY tests/ tests/
-COPY wait-for-it.sh wait-for-it.sh
+ADD https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh wait-for-it.sh
+RUN chmod +x wait-for-it.sh
 ENTRYPOINT [ "./wait-for-it.sh", "database:1433", "--", "pipenv", "run", "python", "-m", "pytest", "-s", "-v"]
