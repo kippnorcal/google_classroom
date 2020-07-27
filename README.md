@@ -41,7 +41,6 @@ DB_PWD=
 DB_SCHEMA=
 
 # (Optional) Data Pulls To Enable. Set to "YES" to include that pull.
-# These can be left out in favor of command line arguments.
 PULL_USAGE=
 PULL_COURSES=
 PULL_TOPICS=
@@ -55,6 +54,10 @@ PULL_ALIASES=
 PULL_INVITATIONS=
 PULL_ANNOUNCEMENTS=
 PULL_MEET=
+
+# (Optional) Debug parameters. Set to "YES" to include debug logs or files.
+DEBUG=
+DEBUGFILE=
 
 # (Optional) Batch parameters. Can be configured and changed to optimize performance.
 # *_BATCH_SIZE is the number of dates or courses to batch at a time. MAX: 1000
@@ -159,30 +162,16 @@ Run the Docker image using a local database.
 docker run --rm -it --network host google_classroom
 ```
 
-Optional flags will include different types of pulls (can also be done via env variables):
-
-- `--all` (for pulling all data)
-- `--usage`
-- `--courses`
-- `--topics`
-- `--coursework`
-- `--students`
-- `--teachers`
-- `--guardians`
-- `--submissions`
-- `--invites`
-- `--aliases`
-- `--invitations`
-- `--announcements`
-- `--meet`
-
-Use the flag `--debug` to turn on debug logging.
-Use the flag `--debugfile` to save raw json to a file for backup / auditing.
-
 ### Using Docker Compose:
 
 ```
 docker-compose up --build
+```
+
+You can also pass through the `PULL_` and `DEBUG` environment variables from the command line.
+
+```
+PULL_TEACHERS="YES" PULL_STUDENTS="YES" docker-comopse up --build
 ```
 
 ## Running tests

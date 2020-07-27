@@ -12,6 +12,7 @@ COPY Pipfile .
 RUN pipenv install --skip-lock
 COPY google_classroom/ .
 COPY tests/ tests/
-ADD https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh wait-for-it.sh
-RUN chmod +x wait-for-it.sh
-ENTRYPOINT [ "./wait-for-it.sh", "database:1433", "--", "pipenv", "run", "python", "-m", "pytest", "-s", "-v"]
+ADD https://github.com/ufoscout/docker-compose-wait/releases/download/2.7.3/wait /wait
+RUN chmod +x /wait
+ENV WAIT_HOSTS=database:1433
+CMD sh -c "/wait && pipenv run python -m pytest -s -v"
