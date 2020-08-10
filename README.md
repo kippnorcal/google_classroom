@@ -41,6 +41,7 @@ DB_PWD=
 DB_SCHEMA=
 
 # (Optional) Data Pulls To Enable. Set to "YES" to include that pull.
+PULL_ALL=
 PULL_USAGE=
 PULL_COURSES=
 PULL_TOPICS=
