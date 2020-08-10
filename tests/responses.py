@@ -165,8 +165,8 @@ COURSE_RESPONSE = {
     ]
 }
 
-ALIAS_SOLUTION = pd.DataFrame({"courseId": [None], "alias": ["d:school_test1"]})
-ALIAS_RESPONSE = {"aliases": [{"alias": "d:school_test1"}]}
+ALIAS_SOLUTION = pd.DataFrame({"courseId": 0, "alias": ["d:school_test1"]})
+ALIAS_RESPONSE = {"aliases": [{"courseId": 0, "alias": "d:school_test1"}]}
 
 INVITATION_SOLUTION = pd.DataFrame(
     {
@@ -630,7 +630,7 @@ STUDENT_USAGE_RESPONSE = {
                     }
                 ],
             },
-        ],
+        ]
     },
     "2020-02-28": {
         "usageReports": [
@@ -643,8 +643,8 @@ STUDENT_USAGE_RESPONSE = {
                         "datetimeValue": "2020-02-14T20:29:34.000Z",
                     }
                 ],
-            },
-        ],
+            }
+        ]
     },
 }
 
@@ -738,5 +738,6 @@ MEET_RESPONSE = {
                 }
             ],
         },
-    ],
+    ]
 }
+
