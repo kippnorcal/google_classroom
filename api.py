@@ -217,7 +217,14 @@ class EndPoint:
                 )
                 remaining_requests.append(next_request)
 
+            """Fix up alias records to include course Id"""
+            if "aliases" in response:
+                for alias in response["aliases"]:
+                    if "courseId" not in alias:
+                        alias["courseId"] = course_id
+
             records = response.get(self.request_key, [])
+
             logging_string = f"{self.classname()}: received {len(records)} records"
             logging_string += f", course {course_id}" if course_id else ""
             logging_string += f", date {date}" if date else ""
@@ -431,12 +438,7 @@ class Topics(EndPoint):
 class Teachers(EndPoint):
     def __init__(self, service, sql, config):
         super().__init__(service, sql, config)
-        self.columns = [
-            "courseId",
-            "userId",
-            "fullName",
-            "emailAddress",
-        ]
+        self.columns = ["courseId", "userId", "fullName", "emailAddress"]
         self.request_key = "teachers"
         self.batch_size = config.TEACHERS_BATCH_SIZE
 

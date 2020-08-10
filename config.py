@@ -96,7 +96,7 @@ class Config(object):
     PULL_ANNOUNCEMENTS = (
         os.getenv("PULL_ANNOUNCEMENTS") == "YES" or args.announcements or args.all
     )
-    PULL_MEET = os.getenv("PULL_MEET") == "YES" or args.aliases or args.all
+    PULL_MEET = os.getenv("PULL_MEET") == "YES" or args.meet or args.all
 
     # Email configuration
     SENDER_EMAIL = os.getenv("SENDER_EMAIL")
