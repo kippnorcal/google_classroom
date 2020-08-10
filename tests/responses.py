@@ -165,28 +165,30 @@ COURSE_RESPONSE = {
     ]
 }
 
-ALIAS_SOLUTION = pd.DataFrame({"courseId": [None], "alias": ["d:school_test1"]})
-ALIAS_RESPONSE = {"aliases": [{"alias": "d:school_test1"}]}
+ALIAS_SOLUTION = pd.DataFrame(
+    {"courseId": ["1", "2"], "alias": ["d:school_test1", "d:school_test2"]}
+)
+ALIAS_RESPONSE = {"aliases": [{"alias": "d:school_test1"}, {"alias": "d:school_test2"}]}
 
 INVITATION_SOLUTION = pd.DataFrame(
     {
         "id": ["12345", "23456"],
         "userId": ["1", "2"],
-        "courseId": ["1234", "5678"],
+        "courseId": ["1", "2"],
         "role": ["STUDENT", "STUDENT"],
     }
 )
 INVITATION_RESPONSE = {
     "invitations": [
-        {"id": "12345", "userId": "1", "courseId": "1234", "role": "STUDENT"},
-        {"id": "23456", "userId": "2", "courseId": "5678", "role": "STUDENT"},
+        {"id": "12345", "userId": "1", "courseId": "1", "role": "STUDENT"},
+        {"id": "23456", "userId": "2", "courseId": "2", "role": "STUDENT"},
     ]
 }
 
 ANNOUNCEMENT_SOLUTION = pd.DataFrame(
     {
         "id": ["12345", "23456"],
-        "courseId": ["1234", "5678"],
+        "courseId": ["1", "2"],
         "text": ["Test Announcement #1", "Test Announcement #2"],
         "state": ["PUBLISHED", "PUBLISHED"],
         "alternateLink": [
@@ -212,7 +214,7 @@ ANNOUNCEMENT_SOLUTION = pd.DataFrame(
 ANNOUNCEMENT_RESPONSE = {
     "announcements": [
         {
-            "courseId": "1234",
+            "courseId": "1",
             "id": "12345",
             "text": "Test Announcement #1",
             "materials": [],
@@ -226,7 +228,7 @@ ANNOUNCEMENT_RESPONSE = {
             "creatorUserId": "555",
         },
         {
-            "courseId": "5678",
+            "courseId": "2",
             "id": "23456",
             "text": "Test Announcement #2",
             "materials": [],
@@ -244,7 +246,7 @@ ANNOUNCEMENT_RESPONSE = {
 
 TOPIC_SOLUTION = pd.DataFrame(
     {
-        "courseId": ["1234", "5678"],
+        "courseId": ["1", "2"],
         "topicId": ["1235", "1234"],
         "name": ["Chemistry", "Biology"],
         "updateTime": [
@@ -256,13 +258,13 @@ TOPIC_SOLUTION = pd.DataFrame(
 TOPIC_RESPONSE = {
     "topic": [
         {
-            "courseId": "1234",
+            "courseId": "1",
             "topicId": "1235",
             "name": "Chemistry",
             "updateTime": "2020-04-05T22:41:55.87Z",
         },
         {
-            "courseId": "5678",
+            "courseId": "2",
             "topicId": "1234",
             "name": "Biology",
             "updateTime": "2020-04-05T22:41:49.18Z",
@@ -272,7 +274,7 @@ TOPIC_RESPONSE = {
 
 STUDENT_SOLUTION = pd.DataFrame(
     {
-        "courseId": ["123", "123"],
+        "courseId": ["1", "2"],
         "userId": ["1", "2"],
         "fullName": ["Test User", "Another User"],
         "emailAddress": ["test_user@email.com", "another_user@email.com"],
@@ -281,7 +283,7 @@ STUDENT_SOLUTION = pd.DataFrame(
 STUDENT_RESPONSE = {
     "students": [
         {
-            "courseId": "123",
+            "courseId": "1",
             "userId": "1",
             "profile": {
                 "id": "222",
@@ -294,7 +296,7 @@ STUDENT_RESPONSE = {
             },
         },
         {
-            "courseId": "123",
+            "courseId": "2",
             "userId": "2",
             "profile": {
                 "id": "333",
@@ -312,7 +314,7 @@ STUDENT_RESPONSE = {
 
 TEACHER_SOLUTION = pd.DataFrame(
     {
-        "courseId": ["111", "333", "444"],
+        "courseId": ["1", "2", "2"],
         "userId": ["555", "321", "555"],
         "fullName": ["Boss Lady", "Mr. Teacher", "Mrs. Teacher"],
         "emailAddress": [
@@ -325,7 +327,7 @@ TEACHER_SOLUTION = pd.DataFrame(
 TEACHER_RESPONSE = {
     "teachers": [
         {
-            "courseId": "111",
+            "courseId": "1",
             "userId": "555",
             "profile": {
                 "id": "987",
@@ -339,7 +341,7 @@ TEACHER_RESPONSE = {
             },
         },
         {
-            "courseId": "333",
+            "courseId": "2",
             "userId": "321",
             "profile": {
                 "id": "543",
@@ -353,7 +355,7 @@ TEACHER_RESPONSE = {
             },
         },
         {
-            "courseId": "444",
+            "courseId": "2",
             "userId": "555",
             "profile": {
                 "id": "789",

@@ -40,12 +40,16 @@ class FakeRequest:
         if "courseId" in self.kwargs:
             course_id = self.kwargs["courseId"]
             if course_id is not None:
-                # If a course_id is provided, this splits the results into two courses.
+                # Split responses by the course_id.
                 key = list(self.result.keys())[0]
-                if course_id == 0:
-                    return {key: self.result[key][:1]}
+                values = self.result[key]
+                # Aliases are an exception because the response doesn't contain the
+                # course ID, so they have to be split manually.
+                if key == "aliases":
+                    matches = values[:1] if course_id == "1" else values[1:]
                 else:
-                    return {key: self.result[key][1:]}
+                    matches = [item for item in values if item["courseId"] == course_id]
+                return {key: matches}
         if "date" in self.kwargs:
             date = self.kwargs["date"]
             return self.result.get(date)

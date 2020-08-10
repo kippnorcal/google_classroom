@@ -38,6 +38,8 @@ class EndPoint:
         self.date_columns = []
         self.request_key = None
         self.table_name = f"GoogleClassroom_{self.classname()}"
+        # Set to True in a subclass if the API response doesn't include course IDs.
+        self.inject_course_id = False
 
     def return_all_data(self):
         """Returns all the data in the associated table"""
@@ -224,6 +226,11 @@ class EndPoint:
             logging_string += f", page {page}" if page else ""
             logging_string += "."
             logging.debug(logging_string)
+
+            if self.inject_course_id:
+                for record in records:
+                    record["courseId"] = course_id
+
             nonlocal batch_data
             batch_data.extend(records)
 
@@ -651,6 +658,7 @@ class CourseAliases(EndPoint):
         self.columns = ["courseId", "alias"]
         self.request_key = "aliases"
         self.batch_size = config.ALIASES_BATCH_SIZE
+        self.inject_course_id = True
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         return (
