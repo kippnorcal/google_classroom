@@ -85,56 +85,56 @@ class TestEndToEnd:
         self.generic_get_test(
             Topics(self.service, self.sql, self.config),
             TOPIC_SOLUTION,
-            course_ids=[0, 1],
+            course_ids=["1", "2"],
         )
 
     def test_get_students(self):
         self.generic_get_test(
             Students(self.service, self.sql, self.config),
             STUDENT_SOLUTION,
-            course_ids=[0, 1],
+            course_ids=["1", "2"],
         )
 
     def test_get_teachers(self):
         self.generic_get_test(
             Teachers(self.service, self.sql, self.config),
             TEACHER_SOLUTION,
-            course_ids=[0, 1],
+            course_ids=["1", "2"],
         )
 
     def test_get_aliases(self):
         self.generic_get_test(
             CourseAliases(self.service, self.sql, self.config),
             ALIAS_SOLUTION,
-            course_ids=[0, 1],
+            course_ids=["1", "2"],
         )
 
     def test_get_invitations(self):
         self.generic_get_test(
             Invitations(self.service, self.sql, self.config),
             INVITATION_SOLUTION,
-            course_ids=[0, 1],
+            course_ids=["1", "2"],
         )
 
     def test_get_announcements(self):
         self.generic_get_test(
             Announcements(self.service, self.sql, self.config),
             ANNOUNCEMENT_SOLUTION,
-            course_ids=[0, 1],
+            course_ids=["1", "2"],
         )
 
     def test_get_submissions(self):
         self.generic_get_test(
             StudentSubmissions(self.service, self.sql, self.config),
             STUDENT_SUBMISSION_SOLUTION,
-            course_ids=[0, 1],
+            course_ids=["1", "2"],
         )
 
     def test_get_coursework(self):
         self.generic_get_test(
             CourseWork(self.service, self.sql, self.config),
             COURSEWORK_SOLUTION,
-            course_ids=[0, 1],
+            course_ids=["1", "2"],
         )
 
     def generic_get_test(self, endpoint, solution, course_ids=[None], dates=[None]):
