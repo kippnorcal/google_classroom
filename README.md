@@ -149,14 +149,13 @@ pipenv run python main.py
 docker-compose up --build
 ```
 
-You can also pass through the `PULL_` and `DEBUG` environment variables from the command line.
+You can also use the command line instead of environment variables to specify which endpoints to run.
+For a list of all command line arguments, run `docker-compose run app --help`.
 
 ```
 docker-compose build
 docker-compose run app --teachers --students --guardians
 ```
-
-For a list of all command line arguments, run `docker-compose run app --help`.
 
 ## Running tests
 
