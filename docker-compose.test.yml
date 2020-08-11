@@ -1,0 +1,20 @@
+version: "3"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: tests/Dockerfile
+    depends_on:
+      - database
+  database:
+    image: mcr.microsoft.com/mssql/server:2017-latest-ubuntu
+    logging:
+      driver: "none"
+    restart: always
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: Google_Classroom_Pass1
+      MSSQL_PID: Express
+    ports:
+      - 5432:5432
+      - 1433:1433

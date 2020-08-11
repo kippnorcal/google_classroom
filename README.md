@@ -5,6 +5,7 @@
 - Python3.7
 - [Pipenv](https://pipenv.readthedocs.io/en/latest/)
 - [Docker](https://www.docker.com/)
+- [Docker-Compose](https://docs.docker.com/compose/install/)
 
 ## Getting Started
 
@@ -18,9 +19,12 @@ git clone https://github.com/kipp-bayarea/google_classroom.git
 
 2. Install dependencies
 
-- Docker can be installed directly from the website at docker.com.
+- Docker can be installed from docker.com.
+- Docker-Compose can also be installed via the website, or via `pip`.
 
 3. Create .env file with project secrets
+
+The environment file should fit the following template:
 
 ```
 # Basic Configuration Info
@@ -38,6 +42,7 @@ DB_SCHEMA=
 
 # (Optional) Data Pulls To Enable. Set to "YES" to include that pull.
 # These can be left out in favor of command line arguments.
+PULL_ALL=
 PULL_USAGE=
 PULL_COURSES=
 PULL_TOPICS=
@@ -51,6 +56,10 @@ PULL_ALIASES=
 PULL_INVITATIONS=
 PULL_ANNOUNCEMENTS=
 PULL_MEET=
+
+# (Optional) Debug parameters. Set to "YES" to include debug logs or files.
+DEBUG=
+DEBUGFILE=
 
 # (Optional) Batch parameters. Can be configured and changed to optimize performance.
 # *_BATCH_SIZE is the number of dates or courses to batch at a time. MAX: 1000
@@ -94,7 +103,7 @@ EMAIL_PORT=
 - Click on "Create Credentials -> Service Account"
 - Create a name for your service account.
 - Select the "Owner" role for the service account.
-- Create a key, saving the result file as `service.json`.
+- Create a key, saving the result file as `service.json` in the `/google_classroom` directory.
 - Check the box for "Enable G Suite Domain-Wide Delegation"
 - Click "Done".
 
@@ -119,72 +128,42 @@ https://www.googleapis.com/auth/classroom.topics,
 https://www.googleapis.com/auth/admin.reports.audit.readonly
 ```
 
-### Running the job
+## Running the job
 
-Build the Docker image
+### Locally
 
-```
-docker build -t google_classroom .
-```
-
-Run the job
+Install the dependencies.
 
 ```
-docker run --rm -it google_classroom
+pipenv install --skip-lock
 ```
 
-Run the job using a database on localhost
+Run the job.
 
 ```
-docker run --rm -it --network host google_classroom
-```
-
-Run the job locally
-
-```
-pipenv install --skip-lock (first time)
 pipenv run python main.py
 ```
 
-Optional flags will include different types of pulls (can also be done via env variables):
-
-- `--all` (for pulling all data)
-- `--usage`
-- `--courses`
-- `--topics`
-- `--coursework`
-- `--students`
-- `--teachers`
-- `--guardians`
-- `--submissions`
-- `--invites`
-- `--aliases`
-- `--invitations`
-- `--announcements`
-- `--meet`
-
-Use the flag `--debug` to turn on debug logging.
-Use the flag `--debugfile` to save raw json to a file for backup / auditing.
-
-### Running Tests
-
-Tests are located in test_all,py, and can be run with either of the following commands:
-
-Locally:
+### Using Docker Compose:
 
 ```
-pipenv run pytest -s -v
+docker-compose up --build
 ```
 
-On Docker:
+You can also use the command line instead of environment variables to specify which endpoints to run.
+For a list of all command line arguments, run `docker-compose run app --help`.
 
 ```
-docker build -t google_classroom .
-docker run --rm -it google_classroom --test
+docker-compose build
+docker-compose run app --teachers --students --guardians
 ```
 
-When making changes, please run tests to make sure you have not broken anything.
+## Running tests
 
-### Yearly maintenance
+```
+./run_tests
+```
+
+## Yearly maintenance
 
 1. Confirm the org unit ID (used to get Student Usage) in the .env.

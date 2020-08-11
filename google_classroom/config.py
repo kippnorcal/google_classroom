@@ -70,33 +70,34 @@ class Config(object):
     DB_SCHEMA = os.getenv("DB_SCHEMA")
 
     # Debug config
-    DEBUG = args.debug
-    DEBUGFILE = args.debugfile
+    DEBUG = os.getenv("DEBUG") == "YES" or args.debug
+    DEBUGFILE = os.getenv("DEBUGFILE") == "YES" or args.debugfile
 
     # Which endpoints to pull data from
-    PULL_USAGE = os.getenv("PULL_USAGE") == "YES" or args.usage or args.all
-    PULL_COURSES = os.getenv("PULL_COURSES") == "YES" or args.courses or args.all
-    PULL_TOPICS = os.getenv("PULL_TOPICS") == "YES" or args.topics or args.all
+    PULL_ALL = os.getenv("PULL_ALL") == "YES" or args.all
+    PULL_USAGE = os.getenv("PULL_USAGE") == "YES" or PULL_ALL or args.usage
+    PULL_COURSES = os.getenv("PULL_COURSES") == "YES" or PULL_ALL or args.courses
+    PULL_TOPICS = os.getenv("PULL_TOPICS") == "YES" or PULL_ALL or args.topics
     PULL_COURSEWORK = (
-        os.getenv("PULL_COURSEWORK") == "YES" or args.coursework or args.all
+        os.getenv("PULL_COURSEWORK") == "YES" or PULL_ALL or args.coursework
     )
-    PULL_ALIASES = os.getenv("PULL_ALIASES") == "YES" or args.aliases or args.all
-    PULL_STUDENTS = os.getenv("PULL_STUDENTS") == "YES" or args.students or args.all
-    PULL_TEACHERS = os.getenv("PULL_TEACHERS") == "YES" or args.teachers or args.all
-    PULL_GUARDIANS = os.getenv("PULL_GUARDIANS") == "YES" or args.guardians or args.all
+    PULL_ALIASES = os.getenv("PULL_ALIASES") == "YES" or PULL_ALL or args.aliases
+    PULL_STUDENTS = os.getenv("PULL_STUDENTS") == "YES" or PULL_ALL or args.students
+    PULL_TEACHERS = os.getenv("PULL_TEACHERS") == "YES" or PULL_ALL or args.teachers
+    PULL_GUARDIANS = os.getenv("PULL_GUARDIANS") == "YES" or PULL_ALL or args.guardians
     PULL_SUBMISSIONS = (
-        os.getenv("PULL_SUBMISSIONS") == "YES" or args.submissions or args.all
+        os.getenv("PULL_SUBMISSIONS") == "YES" or PULL_ALL or args.submissions
     )
     PULL_INVITATIONS = (
-        os.getenv("PULL_INVITATIONS") == "YES" or args.invitations or args.all
+        os.getenv("PULL_INVITATIONS") == "YES" or PULL_ALL or args.invitations
     )
     PULL_GUARDIAN_INVITES = (
-        os.getenv("PULL_GUARDIAN_INVITES") == "YES" or args.invites or args.all
+        os.getenv("PULL_GUARDIAN_INVITES") == "YES" or PULL_ALL or args.invites
     )
     PULL_ANNOUNCEMENTS = (
-        os.getenv("PULL_ANNOUNCEMENTS") == "YES" or args.announcements or args.all
+        os.getenv("PULL_ANNOUNCEMENTS") == "YES" or PULL_ALL or args.announcements
     )
-    PULL_MEET = os.getenv("PULL_MEET") == "YES" or args.aliases or args.all
+    PULL_MEET = os.getenv("PULL_MEET") == "YES" or PULL_ALL or args.meet
 
     # Email configuration
     SENDER_EMAIL = os.getenv("SENDER_EMAIL")
@@ -125,7 +126,13 @@ class Config(object):
 
 
 class TestConfig(Config):
-    DB_TYPE = "sqlite"
+    DB_TYPE = "mssql"
+    DB_SERVER = "database"
+    DB = "master"
+    DB_USER = "sa"
+    DB_PWD = "Google_Classroom_Pass1"
+    DB_SCHEMA = "dbo"
+    DB_PORT = "1433"
     DEBUG = True
     DEBUGFILE = False
     PULL_USAGE = True
@@ -142,12 +149,6 @@ class TestConfig(Config):
     PULL_ANNOUNCEMENTS = True
     DISABLE_MAILER = True
     SCHOOL_YEAR_START = "2020-01-01"
-    DB_TYPE = "sqlite"
-    DB_SERVER = None
-    DB = "tests.db"
-    DB_USER = None
-    DB_PWD = None
-    DB_SCHEMA = None
     STUDENT_ORG_UNIT = "Test Organization 2"
     ORG_UNIT_BATCH_SIZE = 1000
     USAGE_BATCH_SIZE = 1000

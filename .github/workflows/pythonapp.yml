@@ -3,7 +3,7 @@
 
 name: Python application
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
   test:
@@ -28,4 +28,4 @@ jobs:
         pipenv run flake8
     - name: Test with pytest
       run: |
-        pipenv run pytest
+        ./run_tests.sh

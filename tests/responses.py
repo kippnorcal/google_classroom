@@ -80,8 +80,8 @@ GUARDIAN_INVITE_SOLUTION = pd.DataFrame(
         "invitedEmailAddress": ["name@email.com", "another_name@email.com"],
         "state": ["COMPLETE", "COMPLETE"],
         "creationTime": [
-            pd.to_datetime("2020-04-05 19:42:29.966"),
-            pd.to_datetime("2020-05-05 19:42:29.966"),
+            pd.to_datetime("2020-04-05 19:42:29.96"),
+            pd.to_datetime("2020-05-05 19:42:29.96"),
         ],
     }
 )
@@ -92,14 +92,14 @@ GUARDIAN_INVITE_RESPONSE = {
             "invitationId": "1",
             "invitedEmailAddress": "name@email.com",
             "state": "COMPLETE",
-            "creationTime": "2020-04-05T19:42:29.966Z",
+            "creationTime": "2020-04-05T19:42:29.96Z",
         },
         {
             "studentId": "333",
             "invitationId": "2",
             "invitedEmailAddress": "another_name@email.com",
             "state": "COMPLETE",
-            "creationTime": "2020-05-05T19:42:29.966Z",
+            "creationTime": "2020-05-05T19:42:29.96Z",
         },
     ]
 }
@@ -111,8 +111,8 @@ COURSE_SOLUTION = pd.DataFrame(
         "courseGroupEmail": ["science@class.com", "math@class.com"],
         "courseState": ["ACTIVE", "ACTIVE"],
         "creationTime": [
-            pd.to_datetime("2020-04-05 19:41:15.292"),
-            pd.to_datetime("2020-04-01 17:44:34.899"),
+            pd.to_datetime("2020-04-05 19:41:15.29"),
+            pd.to_datetime("2020-04-01 17:44:34.89"),
         ],
         "description": ["Class description 1", "Class description 2"],
         "descriptionHeading": ["Science Class", "Math Class"],
@@ -123,8 +123,8 @@ COURSE_SOLUTION = pd.DataFrame(
         "section": ["1", "2"],
         "teacherGroupEmail": ["science_teachers@class.com", "math_teachers@class.com"],
         "updateTime": [
-            pd.to_datetime("2020-04-05 19:41:14.305"),
-            pd.to_datetime("2020-04-01 20:54:08.531"),
+            pd.to_datetime("2020-04-05 19:41:14.30"),
+            pd.to_datetime("2020-04-01 20:54:08.53"),
         ],
     }
 )
@@ -135,7 +135,7 @@ COURSE_RESPONSE = {
             "name": "Science Class",
             "courseGroupEmail": "science@class.com",
             "courseState": "ACTIVE",
-            "creationTime": "2020-04-05T19:41:15.292Z",
+            "creationTime": "2020-04-05T19:41:15.29Z",
             "description": "Class description 1",
             "descriptionHeading": "Science Class",
             "enrollmentCode": "abcdefg",
@@ -144,14 +144,14 @@ COURSE_RESPONSE = {
             "room": "Room1",
             "section": "1",
             "teacherGroupEmail": "science_teachers@class.com",
-            "updateTime": "2020-04-05T19:41:14.305Z",
+            "updateTime": "2020-04-05T19:41:14.30Z",
         },
         {
             "id": "23456",
             "name": "Math Class",
             "courseGroupEmail": "math@class.com",
             "courseState": "ACTIVE",
-            "creationTime": "2020-04-01T17:44:34.899Z",
+            "creationTime": "2020-04-01T17:44:34.89Z",
             "description": "Class description 2",
             "descriptionHeading": "Math Class",
             "enrollmentCode": "ghijklmnop",
@@ -160,7 +160,7 @@ COURSE_RESPONSE = {
             "room": "Room2",
             "section": "2",
             "teacherGroupEmail": "math_teachers@class.com",
-            "updateTime": "2020-04-01T20:54:08.531Z",
+            "updateTime": "2020-04-01T20:54:08.53Z",
         },
     ]
 }
@@ -194,16 +194,16 @@ ANNOUNCEMENT_SOLUTION = pd.DataFrame(
             "https://classroom.google.com/c/Bcd2EfG3Hi",
         ],
         "creationTime": [
-            pd.to_datetime("2020-04-05 19:41:15.292"),
-            pd.to_datetime("2020-04-05 19:41:15.292"),
+            pd.to_datetime("2020-04-05 19:41:15.29"),
+            pd.to_datetime("2020-04-05 19:41:15.29"),
         ],
         "updateTime": [
-            pd.to_datetime("2020-04-05 19:41:14.305"),
-            pd.to_datetime("2020-04-05 19:41:14.305"),
+            pd.to_datetime("2020-04-05 19:41:14.30"),
+            pd.to_datetime("2020-04-05 19:41:14.30"),
         ],
         "scheduledTime": [
-            pd.to_datetime("2020-04-06 00:00:00.000"),
-            pd.to_datetime("2020-04-06 00:00:00.000"),
+            pd.to_datetime("2020-04-06 00:00:00.00"),
+            pd.to_datetime("2020-04-06 00:00:00.00"),
         ],
         "assigneeMode": ["ALL_STUDENTS", "ALL_STUDENTS"],
         "creatorUserId": ["555", "333"],
@@ -218,9 +218,9 @@ ANNOUNCEMENT_RESPONSE = {
             "materials": [],
             "state": "PUBLISHED",
             "alternateLink": "https://classroom.google.com/c/Abc1DeF2Gh",
-            "creationTime": "2020-04-05T19:41:15.292Z",
-            "updateTime": "2020-04-05T19:41:14.305Z",
-            "scheduledTime": "2020-04-06T00:00:00.000Z",
+            "creationTime": "2020-04-05T19:41:15.29Z",
+            "updateTime": "2020-04-05T19:41:14.30Z",
+            "scheduledTime": "2020-04-06T00:00:00.00Z",
             "assigneeMode": "ALL_STUDENTS",
             "individualStudentsOptions": {},
             "creatorUserId": "555",
@@ -232,9 +232,9 @@ ANNOUNCEMENT_RESPONSE = {
             "materials": [],
             "state": "PUBLISHED",
             "alternateLink": "https://classroom.google.com/c/Bcd2EfG3Hi",
-            "creationTime": "2020-04-05T19:41:15.292Z",
-            "updateTime": "2020-04-05T19:41:14.305Z",
-            "scheduledTime": "2020-04-06T00:00:00.000Z",
+            "creationTime": "2020-04-05T19:41:15.29Z",
+            "updateTime": "2020-04-05T19:41:14.30Z",
+            "scheduledTime": "2020-04-06T00:00:00.00Z",
             "assigneeMode": "ALL_STUDENTS",
             "individualStudentsOptions": {},
             "creatorUserId": "333",
@@ -248,8 +248,8 @@ TOPIC_SOLUTION = pd.DataFrame(
         "topicId": ["1235", "1234"],
         "name": ["Chemistry", "Biology"],
         "updateTime": [
-            pd.to_datetime("2020-04-05 22:41:55.871"),
-            pd.to_datetime("2020-04-05 22:41:49.187"),
+            pd.to_datetime("2020-04-05 22:41:55.87"),
+            pd.to_datetime("2020-04-05 22:41:49.18"),
         ],
     }
 )
@@ -259,13 +259,13 @@ TOPIC_RESPONSE = {
             "courseId": "1234",
             "topicId": "1235",
             "name": "Chemistry",
-            "updateTime": "2020-04-05T22:41:55.871Z",
+            "updateTime": "2020-04-05T22:41:55.87Z",
         },
         {
             "courseId": "5678",
             "topicId": "1234",
             "name": "Biology",
-            "updateTime": "2020-04-05T22:41:49.187Z",
+            "updateTime": "2020-04-05T22:41:49.18Z",
         },
     ]
 }
@@ -376,39 +376,39 @@ STUDENT_SUBMISSION_SOLUTION = pd.DataFrame(
         "id": ["abc", "def"],
         "userId": ["6", "7"],
         "creationTime": [
-            pd.to_datetime("2020-04-05 19:41:15.292"),
-            pd.to_datetime("2020-04-01 17:44:34.899"),
+            pd.to_datetime("2020-04-05 19:41:15.29"),
+            pd.to_datetime("2020-04-01 17:44:34.89"),
         ],
         "updateTime": [
-            pd.to_datetime("2020-04-06 19:41:15.292"),
-            pd.to_datetime("2020-04-02 17:44:34.899"),
+            pd.to_datetime("2020-04-06 19:41:15.29"),
+            pd.to_datetime("2020-04-02 17:44:34.89"),
         ],
         "state": ["RETURNED", "RETURNED"],
         "draftGrade": [30, 80],
         "assignedGrade": [40, 95],
         "courseWorkType": ["ASSIGNMENT", "ASSIGNMENT"],
         "createdTime": [
-            pd.to_datetime("2020-04-02 19:41:15.292"),
-            pd.to_datetime("2020-04-01 17:44:34.899"),
+            pd.to_datetime("2020-04-02 19:41:15.29"),
+            pd.to_datetime("2020-04-01 17:44:34.89"),
         ],
         "turnedInTimestamp": [
-            pd.to_datetime("2020-04-09 19:41:15.292"),
-            pd.to_datetime("2020-04-08 17:44:34.899"),
+            pd.to_datetime("2020-04-09 19:41:15.29"),
+            pd.to_datetime("2020-04-08 17:44:34.89"),
         ],
         "returnedTimestamp": [
-            pd.to_datetime("2020-04-10 19:41:15.292"),
-            pd.to_datetime("2020-04-09 17:44:34.899"),
+            pd.to_datetime("2020-04-10 19:41:15.29"),
+            pd.to_datetime("2020-04-09 17:44:34.89"),
         ],
         "draftMaxPoints": [100, 100],
         "draftGradeTimestamp": [
-            pd.to_datetime("2020-04-11 19:41:15.292"),
-            pd.to_datetime("2020-04-10 17:44:34.899"),
+            pd.to_datetime("2020-04-11 19:41:15.29"),
+            pd.to_datetime("2020-04-10 17:44:34.89"),
         ],
         "draftGraderId": ["80", "80"],
         "assignedMaxPoints": [100, 100],
         "assignedGradeTimestamp": [
-            pd.to_datetime("2020-04-12 19:41:15.292"),
-            pd.to_datetime("2020-04-11 17:44:34.899"),
+            pd.to_datetime("2020-04-12 19:41:15.29"),
+            pd.to_datetime("2020-04-11 17:44:34.89"),
         ],
         "assignedGraderId": ["90", "90"],
         "late": [True, False],
@@ -421,8 +421,8 @@ STUDENT_SUBMISSION_RESPONSE = {
             "courseWorkId": "123",
             "id": "abc",
             "userId": "6",
-            "creationTime": "2020-04-05T19:41:15.292Z",
-            "updateTime": "2020-04-06T19:41:15.292Z",
+            "creationTime": "2020-04-05T19:41:15.29Z",
+            "updateTime": "2020-04-06T19:41:15.29Z",
             "state": "RETURNED",
             "late": True,
             "draftGrade": 30,
@@ -432,21 +432,21 @@ STUDENT_SUBMISSION_RESPONSE = {
                 {
                     "stateHistory": {
                         "state": "CREATED",
-                        "stateTimestamp": "2020-04-02T19:41:15.292Z",
+                        "stateTimestamp": "2020-04-02T19:41:15.29Z",
                         "actorUserId": "1",
                     }
                 },
                 {
                     "stateHistory": {
                         "state": "TURNED_IN",
-                        "stateTimestamp": "2020-04-09T19:41:15.292Z",
+                        "stateTimestamp": "2020-04-09T19:41:15.29Z",
                         "actorUserId": "1",
                     }
                 },
                 {
                     "gradeHistory": {
                         "maxPoints": 100,
-                        "gradeTimestamp": "2020-04-11T19:41:15.292Z",
+                        "gradeTimestamp": "2020-04-11T19:41:15.29Z",
                         "actorUserId": "80",
                         "gradeChangeType": "DRAFT_GRADE_POINTS_EARNED_CHANGE",
                     }
@@ -454,14 +454,14 @@ STUDENT_SUBMISSION_RESPONSE = {
                 {
                     "stateHistory": {
                         "state": "RETURNED",
-                        "stateTimestamp": "2020-04-10T19:41:15.292Z",
+                        "stateTimestamp": "2020-04-10T19:41:15.29Z",
                         "actorUserId": "1",
                     }
                 },
                 {
                     "gradeHistory": {
                         "maxPoints": 100,
-                        "gradeTimestamp": "2020-04-12T19:41:15.292Z",
+                        "gradeTimestamp": "2020-04-12T19:41:15.29Z",
                         "actorUserId": "90",
                         "gradeChangeType": "ASSIGNED_GRADE_POINTS_EARNED_CHANGE",
                     }
@@ -473,8 +473,8 @@ STUDENT_SUBMISSION_RESPONSE = {
             "courseWorkId": "456",
             "id": "def",
             "userId": "7",
-            "creationTime": "2020-04-01T17:44:34.899Z",
-            "updateTime": "2020-04-02T17:44:34.899Z",
+            "creationTime": "2020-04-01T17:44:34.89Z",
+            "updateTime": "2020-04-02T17:44:34.89Z",
             "state": "RETURNED",
             "draftGrade": 80,
             "assignedGrade": 95,
@@ -483,20 +483,20 @@ STUDENT_SUBMISSION_RESPONSE = {
                 {
                     "stateHistory": {
                         "state": "CREATED",
-                        "stateTimestamp": "2020-04-01T17:44:34.899Z",
+                        "stateTimestamp": "2020-04-01T17:44:34.89Z",
                     }
                 },
                 {
                     "stateHistory": {
                         "state": "TURNED_IN",
-                        "stateTimestamp": "2020-04-08T17:44:34.899Z",
+                        "stateTimestamp": "2020-04-08T17:44:34.89Z",
                     }
                 },
                 {
                     "gradeHistory": {
                         "pointsEarned": 80,
                         "maxPoints": 100,
-                        "gradeTimestamp": "2020-04-10T17:44:34.899Z",
+                        "gradeTimestamp": "2020-04-10T17:44:34.89Z",
                         "actorUserId": "80",
                         "gradeChangeType": "DRAFT_GRADE_POINTS_EARNED_CHANGE",
                     }
@@ -504,14 +504,14 @@ STUDENT_SUBMISSION_RESPONSE = {
                 {
                     "stateHistory": {
                         "state": "RETURNED",
-                        "stateTimestamp": "2020-04-09T17:44:34.899Z",
+                        "stateTimestamp": "2020-04-09T17:44:34.89Z",
                     }
                 },
                 {
                     "gradeHistory": {
                         "pointsEarned": 95,
                         "maxPoints": 100,
-                        "gradeTimestamp": "2020-04-11T17:44:34.899Z",
+                        "gradeTimestamp": "2020-04-11T17:44:34.89Z",
                         "actorUserId": "90",
                         "gradeChangeType": "ASSIGNED_GRADE_POINTS_EARNED_CHANGE",
                     }
@@ -530,12 +530,12 @@ COURSEWORK_SOLUTION = pd.DataFrame(
         "state": ["PUBLISHED", "DRAFT"],
         "alternateLink": ["link1", "link2"],
         "creationTime": [
-            pd.to_datetime("2020-04-25 19:26:58.798"),
-            pd.to_datetime("2020-04-26 14:26:58.798"),
+            pd.to_datetime("2020-04-25 19:26:58.79"),
+            pd.to_datetime("2020-04-26 14:26:58.79"),
         ],
         "updateTime": [
-            pd.to_datetime("2020-04-27 19:28:20.824"),
-            pd.to_datetime("2020-04-28 14:28:20.824"),
+            pd.to_datetime("2020-04-27 19:28:20.82"),
+            pd.to_datetime("2020-04-28 14:28:20.82"),
         ],
         "dueDate": [None, pd.to_datetime("2020-05-01 06:59:00")],
         "maxPoints": [100, 100],
@@ -558,8 +558,8 @@ COURSEWORK_RESPONSE = {
             "description": "desc1",
             "state": "PUBLISHED",
             "alternateLink": "link1",
-            "creationTime": "2020-04-25T19:26:58.798Z",
-            "updateTime": "2020-04-27T19:28:20.824Z",
+            "creationTime": "2020-04-25T19:26:58.79Z",
+            "updateTime": "2020-04-27T19:28:20.82Z",
             "maxPoints": 100,
             "workType": "ASSIGNMENT",
             "submissionModificationMode": "MODIFIABLE_UNTIL_TURNED_IN",
@@ -573,8 +573,8 @@ COURSEWORK_RESPONSE = {
             "description": "desc2",
             "state": "DRAFT",
             "alternateLink": "link2",
-            "creationTime": "2020-04-26T14:26:58.798Z",
-            "updateTime": "2020-04-28T14:28:20.824Z",
+            "creationTime": "2020-04-26T14:26:58.79Z",
+            "updateTime": "2020-04-28T14:28:20.82Z",
             "dueDate": {"year": 2020, "month": 5, "day": 1},
             "dueTime": {"hours": 6, "minutes": 59},
             "maxPoints": 100,
@@ -616,7 +616,7 @@ STUDENT_USAGE_RESPONSE = {
                 "parameters": [
                     {
                         "name": "classroom:last_interaction_time",
-                        "datetimeValue": "2020-02-27T18:11:01.000Z",
+                        "datetimeValue": "2020-02-27T18:11:01.00Z",
                     }
                 ],
             },
@@ -626,7 +626,7 @@ STUDENT_USAGE_RESPONSE = {
                 "parameters": [
                     {
                         "name": "classroom:last_interaction_time",
-                        "datetimeValue": "1970-01-01T00:00:00.000Z",
+                        "datetimeValue": "1970-01-01T00:00:00.00Z",
                     }
                 ],
             },
@@ -640,7 +640,7 @@ STUDENT_USAGE_RESPONSE = {
                 "parameters": [
                     {
                         "name": "classroom:last_interaction_time",
-                        "datetimeValue": "2020-02-14T20:29:34.000Z",
+                        "datetimeValue": "2020-02-14T20:29:34.00Z",
                     }
                 ],
             },
@@ -666,9 +666,9 @@ MEET_SOLUTION = pd.DataFrame(
             "organizer@email.com",
         ],
         "item_time": [
-            pd.to_datetime("2020-05-23 17:42:18.591"),
-            pd.to_datetime("2020-05-24 18:42:18.591"),
-            pd.to_datetime("2020-05-25 19:42:18.591"),
+            pd.to_datetime("2020-05-23 17:42:18.59"),
+            pd.to_datetime("2020-05-24 18:42:18.59"),
+            pd.to_datetime("2020-05-25 19:42:18.59"),
         ],
         "event_name": ["call_ended", "call_ended", "call_ended"],
     }
@@ -676,7 +676,7 @@ MEET_SOLUTION = pd.DataFrame(
 MEET_RESPONSE = {
     "items": [
         {
-            "id": {"time": "2020-05-23T17:42:18.591Z"},
+            "id": {"time": "2020-05-23T17:42:18.59Z"},
             "events": [
                 {
                     "name": "call_ended",
@@ -697,7 +697,7 @@ MEET_RESPONSE = {
             ],
         },
         {
-            "id": {"time": "2020-05-24T18:42:18.591Z"},
+            "id": {"time": "2020-05-24T18:42:18.59Z"},
             "events": [
                 {
                     "name": "call_ended",
@@ -718,7 +718,7 @@ MEET_RESPONSE = {
             ],
         },
         {
-            "id": {"time": "2020-05-25T19:42:18.591Z"},
+            "id": {"time": "2020-05-25T19:42:18.59Z"},
             "events": [
                 {
                     "name": "call_ended",
