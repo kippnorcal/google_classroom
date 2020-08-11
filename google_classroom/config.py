@@ -1,11 +1,60 @@
 # Configuration file for types of configurations.
 
 import os
+import argparse
 from sqlsorcery import MSSQL, PostgreSQL, SQLite
+
+
+def get_args():
+    parser = argparse.ArgumentParser(description="Pick which ones")
+    parser.add_argument("--all", help="Import all data", action="store_true")
+    parser.add_argument(
+        "--usage", help="Import student usage data", action="store_true"
+    )
+    parser.add_argument("--courses", help="Import course lists", action="store_true")
+    parser.add_argument("--topics", help="Import course topics", action="store_true")
+    parser.add_argument("--aliases", help="Import course aliases", action="store_true")
+    parser.add_argument(
+        "--coursework", help="Import course assignments", action="store_true"
+    )
+    parser.add_argument(
+        "--students", help="Import student rosters", action="store_true"
+    )
+    parser.add_argument(
+        "--teachers", help="Import teacher rosters", action="store_true"
+    )
+    parser.add_argument(
+        "--guardians", help="Import student guardians", action="store_true"
+    )
+    parser.add_argument(
+        "--invitations", help="Import course invitations", action="store_true"
+    )
+    parser.add_argument(
+        "--submissions",
+        help="Import student coursework submissions",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--invites", help="Import guardian invite statuses", action="store_true"
+    )
+    parser.add_argument(
+        "--announcements", help="Import course announcements", action="store_true"
+    )
+    parser.add_argument("--meet", help="Import Meet data", action="store_true")
+    parser.add_argument(
+        "--debug", help="Set logging level for troubleshooting", action="store_true"
+    )
+    parser.add_argument(
+        "--debugfile", help="Log raw json to a file", action="store_true"
+    )
+    args, _ = parser.parse_known_args()
+    return args
 
 
 class Config(object):
     """Base configuration object"""
+
+    args = get_args()
 
     # General config
     ACCOUNT_EMAIL = os.getenv("ACCOUNT_EMAIL")
@@ -21,24 +70,34 @@ class Config(object):
     DB_SCHEMA = os.getenv("DB_SCHEMA")
 
     # Debug config
-    DEBUG = os.getenv("DEBUG") == "YES"
-    DEBUGFILE = os.getenv("DEBUGFILE") == "YES"
+    DEBUG = os.getenv("DEBUG") == "YES" or args.debug
+    DEBUGFILE = os.getenv("DEBUGFILE") == "YES" or args.debugfile
 
     # Which endpoints to pull data from
-    PULL_ALL = os.getenv("PULL_ALL") == "YES"
-    PULL_USAGE = os.getenv("PULL_USAGE") == "YES" or PULL_ALL
-    PULL_COURSES = os.getenv("PULL_COURSES") == "YES" or PULL_ALL
-    PULL_TOPICS = os.getenv("PULL_TOPICS") == "YES" or PULL_ALL
-    PULL_COURSEWORK = os.getenv("PULL_COURSEWORK") == "YES" or PULL_ALL
-    PULL_ALIASES = os.getenv("PULL_ALIASES") == "YES" or PULL_ALL
-    PULL_STUDENTS = os.getenv("PULL_STUDENTS") == "YES" or PULL_ALL
-    PULL_TEACHERS = os.getenv("PULL_TEACHERS") == "YES" or PULL_ALL
-    PULL_GUARDIANS = os.getenv("PULL_GUARDIANS") == "YES" or PULL_ALL
-    PULL_SUBMISSIONS = os.getenv("PULL_SUBMISSIONS") == "YES" or PULL_ALL
-    PULL_INVITATIONS = os.getenv("PULL_INVITATIONS") == "YES" or PULL_ALL
-    PULL_GUARDIAN_INVITES = os.getenv("PULL_GUARDIAN_INVITES") == "YES" or PULL_ALL
-    PULL_ANNOUNCEMENTS = os.getenv("PULL_ANNOUNCEMENTS") == "YES" or PULL_ALL
-    PULL_MEET = os.getenv("PULL_MEET") == "YES" or PULL_ALL
+    PULL_ALL = os.getenv("PULL_ALL") == "YES" or args.all
+    PULL_USAGE = os.getenv("PULL_USAGE") == "YES" or PULL_ALL or args.usage
+    PULL_COURSES = os.getenv("PULL_COURSES") == "YES" or PULL_ALL or args.courses
+    PULL_TOPICS = os.getenv("PULL_TOPICS") == "YES" or PULL_ALL or args.topics
+    PULL_COURSEWORK = (
+        os.getenv("PULL_COURSEWORK") == "YES" or PULL_ALL or args.coursework
+    )
+    PULL_ALIASES = os.getenv("PULL_ALIASES") == "YES" or PULL_ALL or args.aliases
+    PULL_STUDENTS = os.getenv("PULL_STUDENTS") == "YES" or PULL_ALL or args.students
+    PULL_TEACHERS = os.getenv("PULL_TEACHERS") == "YES" or PULL_ALL or args.teachers
+    PULL_GUARDIANS = os.getenv("PULL_GUARDIANS") == "YES" or PULL_ALL or args.guardians
+    PULL_SUBMISSIONS = (
+        os.getenv("PULL_SUBMISSIONS") == "YES" or PULL_ALL or args.submissions
+    )
+    PULL_INVITATIONS = (
+        os.getenv("PULL_INVITATIONS") == "YES" or PULL_ALL or args.invitations
+    )
+    PULL_GUARDIAN_INVITES = (
+        os.getenv("PULL_GUARDIAN_INVITES") == "YES" or PULL_ALL or args.invites
+    )
+    PULL_ANNOUNCEMENTS = (
+        os.getenv("PULL_ANNOUNCEMENTS") == "YES" or PULL_ALL or args.announcements
+    )
+    PULL_MEET = os.getenv("PULL_MEET") == "YES" or PULL_ALL or args.meet
 
     # Email configuration
     SENDER_EMAIL = os.getenv("SENDER_EMAIL")

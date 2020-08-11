@@ -1,23 +1,7 @@
 version: "3"
 services:
   app:
-    environment:
-      PULL_ALL: $PULL_ALL
-      PULL_USAGE: $PULL_USAGE
-      PULL_COURSES: $PULL_COURSES
-      PULL_TOPICS: $PULL_TOPICS
-      PULL_COURSEWORK: $PULL_COURSEWORK
-      PULL_ALIASES: $PULL_ALIASES
-      PULL_STUDENTS: $PULL_STUDENTS
-      PULL_TEACHERS: $PULL_TEACHERS
-      PULL_GUARDIANS: $PULL_GUARDIANS
-      PULL_SUBMISSIONS: $PULL_SUBMISSIONS
-      PULL_INVITATIONS: $PULL_INVITATIONS
-      PULL_GUARDIAN_INVITES: $PULL_GUARDIAN_INVITES
-      PULL_ANNOUNCEMENTS: $PULL_ANNOUNCEMENTS
-      PULL_MEET: $PULL_MEET
-      DEBUG: $DEBUG
-      DEBUGFILE: $DEBUGFILE
+    entrypoint: ["pipenv", "run", "python", "main.py"]
     build:
       context: .
       dockerfile: google_classroom/Dockerfile

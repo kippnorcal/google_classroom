@@ -12,4 +12,3 @@ RUN pipenv install --skip-lock
 COPY google_classroom/ google_classroom/
 COPY .env .env
 WORKDIR /google_classroom
-ENTRYPOINT ["pipenv", "run", "python", "main.py"]

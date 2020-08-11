@@ -143,26 +143,6 @@ Run the job.
 pipenv run python main.py
 ```
 
-### Using Docker
-
-Build the Docker image.
-
-```
-docker build -f google_classroom/Dockerfile -t google_classroom .
-```
-
-Run the Docker image.
-
-```
-docker run --rm -it google_classroom
-```
-
-Run the Docker image using a local database.
-
-```
-docker run --rm -it --network host google_classroom
-```
-
 ### Using Docker Compose:
 
 ```
@@ -172,8 +152,11 @@ docker-compose up --build
 You can also pass through the `PULL_` and `DEBUG` environment variables from the command line.
 
 ```
-PULL_TEACHERS="YES" PULL_STUDENTS="YES" docker-compose up --build
+docker-compose build
+docker-compose run app --teachers --students --guardians
 ```
+
+For a list of all command line arguments, run `docker-compose run app --help`.
 
 ## Running tests
 
