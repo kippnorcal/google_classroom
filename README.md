@@ -102,7 +102,7 @@ EMAIL_PORT=
 - Click on "Create Credentials -> Service Account"
 - Create a name for your service account.
 - Select the "Owner" role for the service account.
-- Create a key, saving the result file as `service.json`.
+- Create a key, saving the result file as `service.json` in the `/google_classroom` directory.
 - Check the box for "Enable G Suite Domain-Wide Delegation"
 - Click "Done".
 
@@ -172,7 +172,7 @@ docker-compose up --build
 You can also pass through the `PULL_` and `DEBUG` environment variables from the command line.
 
 ```
-PULL_TEACHERS="YES" PULL_STUDENTS="YES" docker-comopse up --build
+PULL_TEACHERS="YES" PULL_STUDENTS="YES" docker-compose up --build
 ```
 
 ## Running tests
