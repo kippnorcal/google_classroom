@@ -41,6 +41,7 @@ DB_PWD=
 DB_SCHEMA=
 
 # (Optional) Data Pulls To Enable. Set to "YES" to include that pull.
+# These can be left out in favor of command line arguments.
 PULL_ALL=
 PULL_USAGE=
 PULL_COURSES=
