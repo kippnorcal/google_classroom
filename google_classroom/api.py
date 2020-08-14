@@ -407,7 +407,6 @@ class Courses(EndPoint):
     def request_data(self, course_id=None, date=None, next_page_token=None):
         return self.service.courses().list(
             pageToken=next_page_token,
-            courseStates=["ACTIVE"],
             pageSize=self.config.PAGE_SIZE,
         )
 
