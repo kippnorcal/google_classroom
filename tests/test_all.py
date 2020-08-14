@@ -1,21 +1,23 @@
 import pandas as pd
 from config import TestConfig, db_generator
-from api import (
-    Announcements,
-    CourseAliases,
-    Courses,
+
+from endpoints import (
+    Announcement,
+    Course,
+    CourseAlias,
     CourseWork,
-    OrgUnits,
-    Guardians,
-    GuardianInvites,
-    Invitations,
+    Guardian,
+    GuardianInvitation,
+    Invitation,
     Meet,
-    Topics,
-    Students,
-    Teachers,
-    StudentSubmissions,
+    OrgUnit,
+    Student,
+    StudentSubmission,
     StudentUsage,
+    Teacher,
+    Topic,
 )
+
 from mock_response import FakeService
 from responses import (
     ALIAS_SOLUTION,
@@ -35,7 +37,7 @@ from responses import (
 )
 
 
-class TestEndToEnd:
+class TestPulls:
     def setup(self):
         self.config = TestConfig
         self.sql = db_generator(self.config)
@@ -43,7 +45,7 @@ class TestEndToEnd:
 
     def test_get_org_units(self):
         self.generic_get_test(
-            OrgUnits(self.service, self.sql, self.config), ORG_UNIT_SOLUTION
+            OrgUnit(self.service, self.sql, self.config), ORG_UNIT_SOLUTION
         )
 
     def test_get_student_usage(self):
@@ -64,18 +66,18 @@ class TestEndToEnd:
 
     def test_get_guardians(self):
         self.generic_get_test(
-            Guardians(self.service, self.sql, self.config), GUARDIAN_SOLUTION
+            Guardian(self.service, self.sql, self.config), GUARDIAN_SOLUTION
         )
 
     def test_get_guardian_invites(self):
         self.generic_get_test(
-            GuardianInvites(self.service, self.sql, self.config),
+            GuardianInvitation(self.service, self.sql, self.config),
             GUARDIAN_INVITE_SOLUTION,
         )
 
     def test_get_courses(self):
         self.generic_get_test(
-            Courses(self.service, self.sql, self.config), COURSE_SOLUTION
+            Course(self.service, self.sql, self.config), COURSE_SOLUTION
         )
 
     def test_get_meet(self):
@@ -83,49 +85,49 @@ class TestEndToEnd:
 
     def test_get_topics(self):
         self.generic_get_test(
-            Topics(self.service, self.sql, self.config),
+            Topic(self.service, self.sql, self.config),
             TOPIC_SOLUTION,
             course_ids=["1", "2"],
         )
 
     def test_get_students(self):
         self.generic_get_test(
-            Students(self.service, self.sql, self.config),
+            Student(self.service, self.sql, self.config),
             STUDENT_SOLUTION,
             course_ids=["1", "2"],
         )
 
     def test_get_teachers(self):
         self.generic_get_test(
-            Teachers(self.service, self.sql, self.config),
+            Teacher(self.service, self.sql, self.config),
             TEACHER_SOLUTION,
             course_ids=["1", "2"],
         )
 
     def test_get_aliases(self):
         self.generic_get_test(
-            CourseAliases(self.service, self.sql, self.config),
+            CourseAlias(self.service, self.sql, self.config),
             ALIAS_SOLUTION,
             course_ids=["1", "2"],
         )
 
     def test_get_invitations(self):
         self.generic_get_test(
-            Invitations(self.service, self.sql, self.config),
+            Invitation(self.service, self.sql, self.config),
             INVITATION_SOLUTION,
             course_ids=["1", "2"],
         )
 
     def test_get_announcements(self):
         self.generic_get_test(
-            Announcements(self.service, self.sql, self.config),
+            Announcement(self.service, self.sql, self.config),
             ANNOUNCEMENT_SOLUTION,
             course_ids=["1", "2"],
         )
 
     def test_get_submissions(self):
         self.generic_get_test(
-            StudentSubmissions(self.service, self.sql, self.config),
+            StudentSubmission(self.service, self.sql, self.config),
             STUDENT_SUBMISSION_SOLUTION,
             course_ids=["1", "2"],
         )
@@ -143,3 +145,14 @@ class TestEndToEnd:
             endpoint.table_name, con=self.sql.engine, schema=self.sql.schema
         )
         assert result.equals(solution)
+
+
+class TestSync:
+    def setup(self):
+        self.config = TestConfig
+        self.sql = db_generator(self.config)
+        self.service = FakeService()
+
+    def test_sync_courses(self):
+        results = Course(self.service, self.sql, self.config).sync_data()
+        assert results == "Data syncing is not yet available."

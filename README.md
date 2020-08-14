@@ -57,6 +57,9 @@ PULL_INVITATIONS=
 PULL_ANNOUNCEMENTS=
 PULL_MEET=
 
+# (Optional) Syncing from a file. Set to "YES" to sync files (see instructions below).
+SYNC=
+
 # (Optional) Debug parameters. Set to "YES" to include debug logs or files.
 DEBUG=
 DEBUGFILE=
@@ -127,6 +130,18 @@ https://www.googleapis.com/auth/classroom.student-submissions.students.readonly,
 https://www.googleapis.com/auth/classroom.topics,
 https://www.googleapis.com/auth/admin.reports.audit.readonly
 ```
+
+## Syncing data to Google Classroom
+
+NOTE: This functionality is currently in development and does not yet work.
+
+In addition to pulling data from Google Classroom, this script can write data back.
+The sync logic takes the provided file as "source of truth" and matches that to Google Classroom.
+To enable this logic:
+
+1. Add the file `courses.csv` to the folder `/google_classroom/sync_files` matching the format of `courses_sample.csv`.
+
+2. Set `SYNC=YES` in your .env file or pass the --sync arg via the command line.
 
 ## Running the job
 

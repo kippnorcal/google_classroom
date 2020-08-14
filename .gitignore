@@ -149,3 +149,5 @@ static
 *.csv
 *.json
 *.pickle
+
+!/google_classroom/sync_files/*_sample.csv

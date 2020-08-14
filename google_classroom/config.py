@@ -47,6 +47,9 @@ def get_args():
     parser.add_argument(
         "--debugfile", help="Log raw json to a file", action="store_true"
     )
+    parser.add_argument(
+        "--sync", help="Sync courses back to Google Classroom", action="store_true"
+    )
     args, _ = parser.parse_known_args()
     return args
 
@@ -99,6 +102,9 @@ class Config(object):
     )
     PULL_MEET = os.getenv("PULL_MEET") == "YES" or PULL_ALL or args.meet
 
+    # Sync config
+    SYNC = os.getenv("SYNC") == "YES" or args.sync
+
     # Email configuration
     SENDER_EMAIL = os.getenv("SENDER_EMAIL")
     SENDER_PWD = os.getenv("SENDER_PWD")
@@ -135,35 +141,9 @@ class TestConfig(Config):
     DB_PORT = "1433"
     DEBUG = True
     DEBUGFILE = False
-    PULL_USAGE = True
-    PULL_COURSES = True
-    PULL_TOPICS = True
-    PULL_COURSEWORK = True
-    PULL_STUDENTS = True
-    PULL_TEACHERS = True
-    PULL_GUARDIANS = True
-    PULL_SUBMISSIONS = True
-    PULL_GUARDIAN_INVITES = True
-    PULL_INVITATIONS = True
-    PULL_GUARDIAN_INVITES = True
-    PULL_ANNOUNCEMENTS = True
     DISABLE_MAILER = True
     SCHOOL_YEAR_START = "2020-01-01"
     STUDENT_ORG_UNIT = "Test Organization 2"
-    ORG_UNIT_BATCH_SIZE = 1000
-    USAGE_BATCH_SIZE = 1000
-    COURSES_BATCH_SIZE = 1000
-    TOPICS_BATCH_SIZE = 1000
-    COURSEWORK_BATCH_SIZE = 120
-    STUDENTS_BATCH_SIZE = 1000
-    TEACHERS_BATCH_SIZE = 1000
-    GUARDIANS_BATCH_SIZE = 1000
-    SUBMISSIONS_BATCH_SIZE = 120
-    GUARDIAN_INVITES_BATCH_SIZE = 1000
-    ALIASES_BATCH_SIZE = 1000
-    INVITATIONS_BATCH_SIZE = 1000
-    ANNOUNCEMENTS_BATCH_SIZE = 1000
-    PAGE_SIZE = 1000
 
 
 def db_generator(config):
