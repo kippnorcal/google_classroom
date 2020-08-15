@@ -113,6 +113,7 @@ def main(config):
         or config.PULL_ANNOUNCEMENTS
     ):
         courses = Courses(classroom_service, sql, config).return_all_data()
+        courses = courses[courses["courseState"] == "ACTIVE"]
         course_ids = courses.id.unique()
 
     # Get course invitations
