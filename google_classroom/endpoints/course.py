@@ -22,6 +22,13 @@ class Courses(EndPoint):
             "updateTime",
         ]
         self.request_key = "courses"
+        self.to_delete_columns = ["courseId", "name", "section"]
+        self.to_create_columns = [
+            "course_alias",
+            "course_name",
+            "section_name",
+            "teacher_email",
+        ]
         self.batch_size = config.COURSES_BATCH_SIZE
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
@@ -32,3 +39,10 @@ class Courses(EndPoint):
 
     def filter_data(self, dataframe):
         return dataframe[dataframe.updateTime >= self.config.SCHOOL_YEAR_START]
+
+    def return_cleaned_sync_data(self):
+        df = self.return_all_data().astype("str")
+        df = df[df["courseState"] == "ACTIVE"]
+        df = df.rename(columns={"id": "courseId"})
+        df = df[["courseId", "name", "section"]]
+        return df.astype("str")

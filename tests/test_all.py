@@ -35,6 +35,13 @@ from responses import (
     TOPIC_SOLUTION,
     MEET_SOLUTION,
 )
+from sync_data import (
+    COURSE_DATA,
+    ALIAS_DATA,
+    SOURCE_DATA,
+    TO_CREATE_SOLUTION,
+    TO_DELETE_SOLUTION,
+)
 
 
 class TestPulls:
@@ -145,6 +152,7 @@ class TestPulls:
             endpoint.table_name, con=self.sql.engine, schema=self.sql.schema
         )
         assert result.equals(solution)
+        endpoint._drop_table()
 
 
 class TestSync:
@@ -154,5 +162,10 @@ class TestSync:
         self.service = FakeService()
 
     def test_sync_courses(self):
-        results = Courses(self.service, self.sql, self.config).sync_data()
-        assert results == "Data syncing is not yet available."
+        courses = Courses(self.service, self.sql, self.config)
+        aliases = CourseAliases(self.service, self.sql, self.config)
+        self.sql.insert_into(courses.table_name, COURSE_DATA)
+        self.sql.insert_into(aliases.table_name, ALIAS_DATA)
+        (to_create, to_delete) = courses.sync_data(SOURCE_DATA)
+        assert to_create.equals(TO_CREATE_SOLUTION)
+        assert to_delete.equals(TO_DELETE_SOLUTION)
