@@ -1,7 +1,7 @@
 from endpoints.base import EndPoint
 
 
-class Announcement(EndPoint):
+class Announcements(EndPoint):
     def __init__(self, service, sql, config):
         super().__init__(service, sql, config)
         self.date_columns = ["creationTime", "updateTime", "scheduledTime"]

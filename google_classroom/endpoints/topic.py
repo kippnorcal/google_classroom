@@ -1,7 +1,7 @@
 from endpoints.base import EndPoint
 
 
-class Topic(EndPoint):
+class Topics(EndPoint):
     def __init__(self, service, sql, config):
         super().__init__(service, sql, config)
         self.date_columns = ["updateTime"]

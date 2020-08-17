@@ -1,7 +1,7 @@
 from endpoints.base import EndPoint
 
 
-class OrgUnit(EndPoint):
+class OrgUnits(EndPoint):
     def __init__(self, service, sql, config):
         super().__init__(service, sql, config)
         self.columns = ["name", "description", "orgUnitPath", "orgUnitId"]

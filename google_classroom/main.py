@@ -8,20 +8,20 @@ from google.oauth2 import service_account
 import pandas as pd
 
 from endpoints import (
-    Announcement,
-    Course,
-    CourseAlias,
+    Announcements,
+    Courses,
+    CourseAliases,
     CourseWork,
-    Guardian,
-    GuardianInvitation,
-    Invitation,
+    Guardians,
+    GuardianInvites,
+    Invitations,
     Meet,
-    OrgUnit,
-    Student,
-    StudentSubmission,
+    OrgUnits,
+    Students,
+    StudentSubmissions,
     StudentUsage,
-    Teacher,
-    Topic,
+    Teachers,
+    Topics,
 )
 from config import Config, db_generator
 from mailer import Mailer
@@ -79,7 +79,7 @@ def pull_data(config, creds, sql):
     # Get usage
     if config.PULL_USAGE:
         # First get student org unit
-        orgUnits = OrgUnit(admin_directory_service, sql, config)
+        orgUnits = OrgUnits(admin_directory_service, sql, config)
         orgUnits.batch_pull_data()
         result = orgUnits.return_all_data()
         org_unit_id = None if result.empty else result.iloc[0].loc["orgUnitId"]
@@ -97,15 +97,15 @@ def pull_data(config, creds, sql):
 
     # Get guardians
     if config.PULL_GUARDIANS:
-        Guardian(classroom_service, sql, config).batch_pull_data()
+        Guardians(classroom_service, sql, config).batch_pull_data()
 
     # Get guardian invites
     if config.PULL_GUARDIAN_INVITES:
-        GuardianInvitation(classroom_service, sql, config).batch_pull_data()
+        GuardianInvites(classroom_service, sql, config).batch_pull_data()
 
     # Get courses
     if config.PULL_COURSES:
-        Course(classroom_service, sql, config).batch_pull_data()
+        Courses(classroom_service, sql, config).batch_pull_data()
 
     # Get list of course ids
     if (
@@ -118,29 +118,29 @@ def pull_data(config, creds, sql):
         or config.PULL_INVITATIONS
         or config.PULL_ANNOUNCEMENTS
     ):
-        courses = Course(classroom_service, sql, config).return_all_data()
+        courses = Courses(classroom_service, sql, config).return_all_data()
         courses = courses[courses["courseState"] == "ACTIVE"]
         course_ids = courses.id.unique()
 
     # Get course invitations
     if config.PULL_INVITATIONS:
-        Invitation(classroom_service, sql, config).batch_pull_data(course_ids)
+        Invitations(classroom_service, sql, config).batch_pull_data(course_ids)
 
     # Get course announcements
     if config.PULL_ANNOUNCEMENTS:
-        Announcement(classroom_service, sql, config).batch_pull_data(course_ids)
+        Announcements(classroom_service, sql, config).batch_pull_data(course_ids)
 
     # Get course aliases
     if config.PULL_ALIASES:
-        CourseAlias(classroom_service, sql, config).batch_pull_data(course_ids)
+        CourseAliases(classroom_service, sql, config).batch_pull_data(course_ids)
 
     # Get course invitations
     if config.PULL_INVITATIONS:
-        Invitation(classroom_service, sql, config).batch_pull_data(course_ids)
+        Invitations(classroom_service, sql, config).batch_pull_data(course_ids)
 
     # Get course topics
     if config.PULL_TOPICS:
-        Topic(classroom_service, sql, config).batch_pull_data(course_ids)
+        Topics(classroom_service, sql, config).batch_pull_data(course_ids)
 
     # Get CourseWork
     if config.PULL_COURSEWORK:
@@ -148,15 +148,15 @@ def pull_data(config, creds, sql):
 
     # Get students and insert into database
     if config.PULL_STUDENTS:
-        Student(classroom_service, sql, config).batch_pull_data(course_ids)
+        Students(classroom_service, sql, config).batch_pull_data(course_ids)
 
     # Get teachers and insert into database
     if config.PULL_TEACHERS:
-        Teacher(classroom_service, sql, config).batch_pull_data(course_ids)
+        Teachers(classroom_service, sql, config).batch_pull_data(course_ids)
 
     # Get student coursework submissions
     if config.PULL_SUBMISSIONS:
-        StudentSubmission(classroom_service, sql, config).batch_pull_data(course_ids)
+        StudentSubmissions(classroom_service, sql, config).batch_pull_data(course_ids)
 
     # Get Meet data
     if config.PULL_MEET:
@@ -165,7 +165,7 @@ def pull_data(config, creds, sql):
 
 def sync_data(config, creds, sql):
     classroom_service = build("classroom", "v1", credentials=creds)
-    result = Course(classroom_service, sql, config).sync_data()
+    result = Courses(classroom_service, sql, config).sync_data()
     print(result)
 
 

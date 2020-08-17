@@ -1,7 +1,7 @@
 from endpoints.base import EndPoint
 
 
-class Student(EndPoint):
+class Students(EndPoint):
     def __init__(self, service, sql, config):
         super().__init__(service, sql, config)
         self.columns = ["courseId", "userId", "fullName", "emailAddress"]

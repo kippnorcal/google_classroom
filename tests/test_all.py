@@ -2,20 +2,20 @@ import pandas as pd
 from config import TestConfig, db_generator
 
 from endpoints import (
-    Announcement,
-    Course,
-    CourseAlias,
+    Announcements,
+    Courses,
+    CourseAliases,
     CourseWork,
-    Guardian,
-    GuardianInvitation,
-    Invitation,
+    Guardians,
+    GuardianInvites,
+    Invitations,
     Meet,
-    OrgUnit,
-    Student,
-    StudentSubmission,
+    OrgUnits,
+    Students,
+    StudentSubmissions,
     StudentUsage,
-    Teacher,
-    Topic,
+    Teachers,
+    Topics,
 )
 
 from mock_response import FakeService
@@ -45,7 +45,7 @@ class TestPulls:
 
     def test_get_org_units(self):
         self.generic_get_test(
-            OrgUnit(self.service, self.sql, self.config), ORG_UNIT_SOLUTION
+            OrgUnits(self.service, self.sql, self.config), ORG_UNIT_SOLUTION
         )
 
     def test_get_student_usage(self):
@@ -66,18 +66,18 @@ class TestPulls:
 
     def test_get_guardians(self):
         self.generic_get_test(
-            Guardian(self.service, self.sql, self.config), GUARDIAN_SOLUTION
+            Guardians(self.service, self.sql, self.config), GUARDIAN_SOLUTION
         )
 
     def test_get_guardian_invites(self):
         self.generic_get_test(
-            GuardianInvitation(self.service, self.sql, self.config),
+            GuardianInvites(self.service, self.sql, self.config),
             GUARDIAN_INVITE_SOLUTION,
         )
 
     def test_get_courses(self):
         self.generic_get_test(
-            Course(self.service, self.sql, self.config), COURSE_SOLUTION
+            Courses(self.service, self.sql, self.config), COURSE_SOLUTION
         )
 
     def test_get_meet(self):
@@ -85,49 +85,49 @@ class TestPulls:
 
     def test_get_topics(self):
         self.generic_get_test(
-            Topic(self.service, self.sql, self.config),
+            Topics(self.service, self.sql, self.config),
             TOPIC_SOLUTION,
             course_ids=["1", "2"],
         )
 
     def test_get_students(self):
         self.generic_get_test(
-            Student(self.service, self.sql, self.config),
+            Students(self.service, self.sql, self.config),
             STUDENT_SOLUTION,
             course_ids=["1", "2"],
         )
 
     def test_get_teachers(self):
         self.generic_get_test(
-            Teacher(self.service, self.sql, self.config),
+            Teachers(self.service, self.sql, self.config),
             TEACHER_SOLUTION,
             course_ids=["1", "2"],
         )
 
     def test_get_aliases(self):
         self.generic_get_test(
-            CourseAlias(self.service, self.sql, self.config),
+            CourseAliases(self.service, self.sql, self.config),
             ALIAS_SOLUTION,
             course_ids=["1", "2"],
         )
 
     def test_get_invitations(self):
         self.generic_get_test(
-            Invitation(self.service, self.sql, self.config),
+            Invitations(self.service, self.sql, self.config),
             INVITATION_SOLUTION,
             course_ids=["1", "2"],
         )
 
     def test_get_announcements(self):
         self.generic_get_test(
-            Announcement(self.service, self.sql, self.config),
+            Announcements(self.service, self.sql, self.config),
             ANNOUNCEMENT_SOLUTION,
             course_ids=["1", "2"],
         )
 
     def test_get_submissions(self):
         self.generic_get_test(
-            StudentSubmission(self.service, self.sql, self.config),
+            StudentSubmissions(self.service, self.sql, self.config),
             STUDENT_SUBMISSION_SOLUTION,
             course_ids=["1", "2"],
         )
@@ -154,5 +154,5 @@ class TestSync:
         self.service = FakeService()
 
     def test_sync_courses(self):
-        results = Course(self.service, self.sql, self.config).sync_data()
+        results = Courses(self.service, self.sql, self.config).sync_data()
         assert results == "Data syncing is not yet available."
