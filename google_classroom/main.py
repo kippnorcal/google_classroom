@@ -7,21 +7,21 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import pandas as pd
 
-from api import (
+from endpoints import (
     Announcements,
     Courses,
-    CourseWork,
     CourseAliases,
-    GuardianInvites,
+    CourseWork,
     Guardians,
+    GuardianInvites,
     Invitations,
+    Meet,
     OrgUnits,
     Students,
     StudentSubmissions,
     StudentUsage,
     Teachers,
     Topics,
-    Meet,
 )
 from config import Config, db_generator
 from mailer import Mailer
@@ -65,10 +65,16 @@ def get_credentials(config):
 def main(config):
     configure_logging(config)
     creds = get_credentials(config)
+    sql = db_generator(config)
+    pull_data(config, creds, sql)
+    if config.SYNC:
+        sync_data(config, creds, sql)
+
+
+def pull_data(config, creds, sql):
     classroom_service = build("classroom", "v1", credentials=creds)
     admin_reports_service = build("admin", "reports_v1", credentials=creds)
     admin_directory_service = build("admin", "directory_v1", credentials=creds)
-    sql = db_generator(config)
 
     # Get usage
     if config.PULL_USAGE:
@@ -132,10 +138,6 @@ def main(config):
     if config.PULL_INVITATIONS:
         Invitations(classroom_service, sql, config).batch_pull_data(course_ids)
 
-    # Get course announcements
-    if config.PULL_ANNOUNCEMENTS:
-        Announcements(classroom_service, sql, config).batch_pull_data(course_ids)
-
     # Get course topics
     if config.PULL_TOPICS:
         Topics(classroom_service, sql, config).batch_pull_data(course_ids)
@@ -159,6 +161,12 @@ def main(config):
     # Get Meet data
     if config.PULL_MEET:
         Meet(admin_reports_service, sql, config).batch_pull_data()
+
+
+def sync_data(config, creds, sql):
+    classroom_service = build("classroom", "v1", credentials=creds)
+    result = Courses(classroom_service, sql, config).sync_data()
+    print(result)
 
 
 if __name__ == "__main__":

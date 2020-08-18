@@ -1,21 +1,23 @@
 import pandas as pd
 from config import TestConfig, db_generator
-from api import (
+
+from endpoints import (
     Announcements,
-    CourseAliases,
     Courses,
+    CourseAliases,
     CourseWork,
-    OrgUnits,
     Guardians,
     GuardianInvites,
     Invitations,
     Meet,
-    Topics,
+    OrgUnits,
     Students,
-    Teachers,
     StudentSubmissions,
     StudentUsage,
+    Teachers,
+    Topics,
 )
+
 from mock_response import FakeService
 from responses import (
     ALIAS_SOLUTION,
@@ -35,7 +37,7 @@ from responses import (
 )
 
 
-class TestEndToEnd:
+class TestPulls:
     def setup(self):
         self.config = TestConfig
         self.sql = db_generator(self.config)
@@ -143,3 +145,14 @@ class TestEndToEnd:
             endpoint.table_name, con=self.sql.engine, schema=self.sql.schema
         )
         assert result.equals(solution)
+
+
+class TestSync:
+    def setup(self):
+        self.config = TestConfig
+        self.sql = db_generator(self.config)
+        self.service = FakeService()
+
+    def test_sync_courses(self):
+        results = Courses(self.service, self.sql, self.config).sync_data()
+        assert results == "Data syncing is not yet available."
