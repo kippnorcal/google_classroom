@@ -10,6 +10,7 @@ from tests.responses import (
     ORG_UNIT_RESPONSE,
     STUDENT_RESPONSE,
     STUDENT_SUBMISSION_RESPONSE,
+    STUDENT_SUBMISSION_RESPONSE_MODIFIED,
     STUDENT_USAGE_RESPONSE,
     TEACHER_RESPONSE,
     TOPIC_RESPONSE,
@@ -57,8 +58,9 @@ class FakeRequest:
 
 
 class FakeEndpoint:
-    def __init__(self, result):
+    def __init__(self, result, modified_response=False):
         self.result = result
+        self.modified_response = modified_response
 
     def list(self, *args, **kwargs):
         return FakeRequest(self.result, *args, **kwargs)
@@ -68,10 +70,16 @@ class FakeEndpoint:
 
 
 class FakeService:
+    def __init__(self, modified_response=False):
+        self.modified_response = modified_response
+
     class Courses(FakeEndpoint):
         class CourseWork(FakeEndpoint):
             def studentSubmissions(self):
-                return FakeEndpoint(STUDENT_SUBMISSION_RESPONSE)
+                if self.modified_response:
+                    return FakeEndpoint(STUDENT_SUBMISSION_RESPONSE_MODIFIED)
+                else:
+                    return FakeEndpoint(STUDENT_SUBMISSION_RESPONSE)
 
         def topics(self):
             return FakeEndpoint(TOPIC_RESPONSE)
@@ -89,10 +97,12 @@ class FakeService:
             return FakeEndpoint(ANNOUNCEMENT_RESPONSE)
 
         def courseWork(self):
-            return self.CourseWork(COURSEWORK_RESPONSE)
+            return self.CourseWork(
+                COURSEWORK_RESPONSE, modified_response=self.modified_response
+            )
 
     def courses(self):
-        return self.Courses(COURSE_RESPONSE)
+        return self.Courses(COURSE_RESPONSE, modified_response=self.modified_response)
 
     def orgunits(self):
         return FakeEndpoint(ORG_UNIT_RESPONSE)

@@ -153,7 +153,9 @@ def pull_data(config, creds, sql):
 
     # Get student coursework submissions
     if config.PULL_SUBMISSIONS:
-        StudentSubmissions(classroom_service, sql, config).batch_pull_data(course_ids)
+        StudentSubmissions(classroom_service, sql, config).batch_pull_data(
+            course_ids, overwrite=False
+        )
 
     # Get Meet data
     if config.PULL_MEET:

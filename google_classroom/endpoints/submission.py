@@ -1,4 +1,5 @@
 from endpoints.base import EndPoint
+from sqlalchemy import text
 
 
 class StudentSubmissions(EndPoint):
@@ -111,3 +112,9 @@ class StudentSubmissions(EndPoint):
             self._parse_grade_history(record, parsed)
             new_records.append(parsed)
         return new_records
+
+    def perform_cleanup(self):
+        with open("sql/remove_duplicates.sql") as sql_file:
+            escaped_sql = text(sql_file.read())
+            with self.sql.engine.connect().execution_options(autocommit=True) as conn:
+                conn.execute(escaped_sql)

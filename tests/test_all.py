@@ -30,6 +30,7 @@ from responses import (
     ORG_UNIT_SOLUTION,
     STUDENT_SOLUTION,
     STUDENT_SUBMISSION_SOLUTION,
+    STUDENT_SUBMISSION_SOLUTION_MODIFIED,
     STUDENT_USAGE_SOLUTION,
     TEACHER_SOLUTION,
     TOPIC_SOLUTION,
@@ -136,8 +137,32 @@ class TestPulls:
         self.generic_get_test(
             StudentSubmissions(self.service, self.sql, self.config),
             STUDENT_SUBMISSION_SOLUTION,
-            course_ids=["1", "2"],
+            course_ids=["1", "2", "3"],
         )
+
+    def test_write_new_submissions(self):
+        """
+        Tests that new submissions will update and append rather than eliminate old
+        submissions in the database.
+        """
+        # Check that the first call only retrieves data from the first two courses.
+        submissions = StudentSubmissions(self.service, self.sql, self.config)
+        submissions.batch_pull_data(course_ids=["1", "2"], overwrite=False)
+        result = pd.read_sql_table(
+            submissions.table_name, con=self.sql.engine, schema=self.sql.schema
+        )
+        assert result.equals(STUDENT_SUBMISSION_SOLUTION.head(2))
+
+        # With the modified response, check that the 2nd course data is updated while
+        # the 3rd course data is appended.
+        new_service = FakeService(modified_response=True)
+        submissions_new = StudentSubmissions(new_service, self.sql, self.config)
+        submissions_new.batch_pull_data(course_ids=["2", "3"], overwrite=False)
+        result = pd.read_sql_table(
+            submissions_new.table_name, con=self.sql.engine, schema=self.sql.schema
+        )
+        assert result.equals(STUDENT_SUBMISSION_SOLUTION_MODIFIED)
+        submissions._drop_table()
 
     def test_get_coursework(self):
         self.generic_get_test(
