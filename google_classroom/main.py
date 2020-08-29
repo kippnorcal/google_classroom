@@ -162,8 +162,7 @@ def pull_data(config, creds, sql):
 
 def sync_all_data(config, creds, sql):
     classroom_service = build("classroom", "v1", credentials=creds)
-    (to_create, to_delete) = Courses(classroom_service, sql, config).sync_data()
-    print("Data syncing is not yet available.")
+    Courses(classroom_service, sql, config).sync_data()
 
 
 if __name__ == "__main__":

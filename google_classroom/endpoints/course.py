@@ -39,3 +39,7 @@ class Courses(EndPoint):
         df = df.rename(columns={"id": "courseId"})
         df = df[["courseId", "name", "section"]]
         return df.astype("str")
+
+    def create_new_item(self, course):
+        course["courseState"] = "ACTIVE"
+        return self.service.courses().create(body=course)

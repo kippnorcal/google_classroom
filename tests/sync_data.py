@@ -32,10 +32,10 @@ SOURCE_DATA = pd.DataFrame(
 
 TO_CREATE_SOLUTION = pd.DataFrame(
     {
-        "alias": ["d:678", "d:789"],
+        "id": ["d:678", "d:789"],
         "name": ["History", "Computer Science"],
         "section": ["2", "2"],
-        "teacher_email": ["a@b.com", "a@b.com"],
+        "ownerId": ["a@b.com", "a@b.com"],
     }
 )
 TO_DELETE_SOLUTION = pd.DataFrame(
