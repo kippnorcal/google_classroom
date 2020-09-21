@@ -345,9 +345,64 @@ class EndPoint:
         )
         to_delete = db_df[db_df.alias.isin(right_only.alias)].reset_index(drop=True)
 
-        for item in to_create.to_dict(orient="records"):
+        batch_results = []
+        quota_exceeded = False
+        remaining_requests = []
+        request_index = {}
+
+        if len(to_create) == 0:
+            logging.info(f"{self.classname()}: No new items to create.")
+            return
+
+        for idx, item in enumerate(to_create.to_dict(orient="records")):
             request = self.create_new_item(item)
-            result = request.execute()
-            logging.info(f"{self.classname()}: Created class: {result}")
+            request_index[str(idx)] = request
+            remaining_requests.append((request, str(idx)))
+
+        def callback(request_id, response, exception):
+            """A local callback for batch requests when they have completed."""
+
+            if exception:
+                status = exception.resp.status
+                # 429: Quota exceeded.
+                # Add the original request back to retry later.
+                if status == 429:
+                    remaining_requests.append(request_index[request_id])
+                    nonlocal quota_exceeded
+                    quota_exceeded = True
+                logging.debug(exception)
+                return
+
+            if response and "warnings" in response:
+                for warning in response["warnings"]:
+                    logging.debug(f"{warning['code']}: {warning['message']}")
+
+            nonlocal batch_results
+            batch_results.append(response)
+
+        while len(remaining_requests) > 0:
+            logging.info(
+                f"{self.classname()}: {len(remaining_requests)} requests remaining."
+            )
+            batch = self.service.new_batch_http_request(callback=callback)
+            current_batch = 0
+            while len(remaining_requests) > 0 and current_batch < self.batch_size:
+                current_batch += 1
+                (request, request_id) = remaining_requests.pop()
+                batch.add(request, request_id=request_id)
+            self._execute_batch_with_retry(batch)
+
+            # Process the results of the batch.
+            logging.debug(
+                f"{self.classname()}: successfully created {len(batch_results)} items."
+            )
+
+            # Pause if quota exceeded. 20s because the quota is a sliding time window.
+            if quota_exceeded:
+                quota_exceeded = False
+                logging.info(
+                    f"{self.classname()}: Quota exceeded. Pausing for 20 seconds..."
+                )
+                time.sleep(20)
 
         return (to_create, to_delete)

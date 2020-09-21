@@ -35,7 +35,7 @@ class Courses(EndPoint):
 
     def return_cleaned_sync_data(self):
         df = self.return_all_data().astype("str")
-        df = df[df["courseState"] == "ACTIVE"]
+        df = df[df["courseState"].isin(["ACTIVE", "PROVISIONED"])]
         df = df.rename(columns={"id": "courseId"})
         df = df[["courseId", "name", "section"]]
         return df.astype("str")

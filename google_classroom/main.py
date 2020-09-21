@@ -120,7 +120,7 @@ def pull_data(config, creds, sql):
         or config.PULL_MEET
     ):
         courses = Courses(classroom_service, sql, config).return_all_data()
-        courses = courses[courses["courseState"] == "ACTIVE"]
+        courses = courses[courses["courseState"].isin(["ACTIVE", "PROVISIONED"])]
         course_ids = courses.id.unique()
 
     # Get course invitations
