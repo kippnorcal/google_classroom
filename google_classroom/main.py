@@ -117,6 +117,7 @@ def pull_data(config, creds, sql):
         or config.PULL_ALIASES
         or config.PULL_INVITATIONS
         or config.PULL_ANNOUNCEMENTS
+        or config.PULL_MEET
     ):
         courses = Courses(classroom_service, sql, config).return_all_data()
         courses = courses[courses["courseState"] == "ACTIVE"]
@@ -133,10 +134,6 @@ def pull_data(config, creds, sql):
     # Get course aliases
     if config.PULL_ALIASES:
         CourseAliases(classroom_service, sql, config).batch_pull_data(course_ids)
-
-    # Get course invitations
-    if config.PULL_INVITATIONS:
-        Invitations(classroom_service, sql, config).batch_pull_data(course_ids)
 
     # Get course topics
     if config.PULL_TOPICS:
