@@ -1,4 +1,4 @@
-course_alias,course_name,section_name,teacher_email
+alias,name,section,teacher_email
 25601,Literature,1,teacher1@gmail.com
 25602,English,2,teacher2@gmail.com
 25603,Biology,3,teacher3@gmail.com

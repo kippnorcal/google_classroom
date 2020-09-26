@@ -23,21 +23,21 @@ ALIAS_DATA = pd.DataFrame(
 )
 SOURCE_DATA = pd.DataFrame(
     {
-        "course_alias": ["123", "234", "678", "789"],
-        "course_name": ["Biology", "Math", "History", "Computer Science"],
-        "section_name": ["1", "1", "2", "2"],
+        "alias": ["123", "234", "678", "789"],
+        "name": ["Biology", "Math", "History", "Computer Science"],
+        "section": ["1", "1", "2", "2"],
         "teacher_email": ["a@b.com", "a@b.com", "a@b.com", "a@b.com"],
     }
 )
 
 TO_CREATE_SOLUTION = pd.DataFrame(
     {
-        "course_alias": ["d:678", "d:789"],
-        "course_name": ["History", "Computer Science"],
-        "section_name": ["2", "2"],
+        "alias": ["d:678", "d:789"],
+        "name": ["History", "Computer Science"],
+        "section": ["2", "2"],
         "teacher_email": ["a@b.com", "a@b.com"],
     }
 )
 TO_DELETE_SOLUTION = pd.DataFrame(
-    {"courseId": ["3"], "name": ["English"], "section": ["2"]}
+    {"courseId": ["3"], "name": ["English"], "section": ["2"], "alias": ["d:345"]}
 )

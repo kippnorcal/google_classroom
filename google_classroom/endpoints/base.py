@@ -320,11 +320,11 @@ class EndPoint:
         db_df = pd.merge(
             db_df, alias_df, left_on="courseId", right_on="courseId", how="inner"
         )
-        data["course_alias"] = "d:" + data["course_alias"]
+        data["alias"] = "d:" + data["alias"]
 
         (left_only, right_only, _) = self.differences_between_frames(
-            data, db_df, "course_alias", "alias"
+            data, db_df, "alias", "alias"
         )
-        to_delete = right_only
-        to_create = left_only
+        to_create = data[data.alias.isin(left_only.alias)].reset_index(drop=True)
+        to_delete = db_df[db_df.alias.isin(right_only.alias)].reset_index(drop=True)
         return (to_create, to_delete)
