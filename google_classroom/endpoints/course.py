@@ -23,6 +23,8 @@ class Courses(EndPoint):
         ]
         self.request_key = "courses"
         self.batch_size = config.COURSES_BATCH_SIZE
+        self.columns_to_merge_on = ["alias", "name", "section"]
+        self.should_delete_on_sync = False
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         return self.service.courses().list(
@@ -42,4 +44,6 @@ class Courses(EndPoint):
 
     def create_new_item(self, course):
         course["courseState"] = "ACTIVE"
+        course["ownerId"] = course.pop("teacher_email")
+        course["id"] = course.pop("alias")
         return self.service.courses().create(body=course)

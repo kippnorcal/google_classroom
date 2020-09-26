@@ -38,9 +38,13 @@ from responses import (
 from sync_data import (
     COURSE_DATA,
     ALIAS_DATA,
-    SOURCE_DATA,
-    TO_CREATE_SOLUTION,
-    TO_DELETE_SOLUTION,
+    STUDENT_DATA,
+    COURSE_SYNC_DATA,
+    STUDENT_SYNC_DATA,
+    TO_CREATE_COURSE_SOLUTION,
+    TO_DELETE_COURSE_SOLUTION,
+    TO_CREATE_STUDENT_SOLUTION,
+    TO_DELETE_STUDENT_SOLUTION,
 )
 
 
@@ -166,6 +170,22 @@ class TestSync:
         aliases = CourseAliases(self.service, self.sql, self.config)
         self.sql.insert_into(courses.table_name, COURSE_DATA)
         self.sql.insert_into(aliases.table_name, ALIAS_DATA)
-        (to_create, to_delete) = courses.sync_data(SOURCE_DATA)
-        assert to_create.equals(TO_CREATE_SOLUTION)
-        assert to_delete.equals(TO_DELETE_SOLUTION)
+        (to_create, to_delete) = courses.sync_data(COURSE_SYNC_DATA)
+        assert to_create.equals(TO_CREATE_COURSE_SOLUTION)
+        assert to_delete.equals(TO_DELETE_COURSE_SOLUTION)
+        courses._drop_table()
+        aliases._drop_table()
+
+    def test_sync_students(self):
+        courses = Courses(self.service, self.sql, self.config)
+        aliases = CourseAliases(self.service, self.sql, self.config)
+        students = Students(self.service, self.sql, self.config)
+        self.sql.insert_into(courses.table_name, COURSE_DATA)
+        self.sql.insert_into(aliases.table_name, ALIAS_DATA)
+        self.sql.insert_into(students.table_name, STUDENT_DATA)
+        (to_create, to_delete) = students.sync_data(STUDENT_SYNC_DATA)
+        assert to_create.equals(TO_CREATE_STUDENT_SOLUTION)
+        assert to_delete.equals(TO_DELETE_STUDENT_SOLUTION)
+        courses._drop_table()
+        aliases._drop_table()
+        students._drop_table()

@@ -274,7 +274,23 @@ class EndPoint:
                 )
                 time.sleep(20)
 
-    def differences_between_frames(self, df1, df2, left_on, right_on):
+    # SYNC FUNCTIONS
+
+    def create_new_item(self, **kwargs):
+        """
+        Returns a request object for calling an API to create an object for that class.
+        Must be overridden by a subclass.
+        """
+        raise Exception("Request function must be overridden in subclass.")
+
+    def delete_item(self, **kwargs):
+        """
+        Returns a request object for calling an API to delete an object for that class.
+        Must be overridden by a subclass.
+        """
+        raise Exception("Request function must be overridden in subclass.")
+
+    def differences_between_frames(self, df1, df2, merge_on):
         """
         Merges two dataframes and splits them by which one a row comes from.
 
@@ -292,8 +308,8 @@ class EndPoint:
         merged = pd.merge(
             df1,
             df2,
-            left_on=left_on,
-            right_on=right_on,
+            left_on=merge_on,
+            right_on=merge_on,
             how="outer",
             indicator=True,
         )
@@ -310,7 +326,7 @@ class EndPoint:
         """
         return self.return_all_data().astype("str")
 
-    def sync_data(self, data=None):
+    def sync_data(self, new_data=None):
         """
         Syncs data back to the relevant endpoint.
 
@@ -325,39 +341,46 @@ class EndPoint:
 
         Return values can be ignored, and are primarily there for testing purposes.
         """
-        if data is None:
+        if new_data is None:
             csv_name = f"{self.classname().lower()}.csv"
-            data = pd.read_csv(f"sync_files/{csv_name}").astype("str")
-        db_df = self.return_cleaned_sync_data()
-        aliases = endpoints.CourseAliases(self.service, self.sql, self.config)
-        alias_df = aliases.return_cleaned_sync_data()
-        db_df = pd.merge(
-            db_df, alias_df, left_on="courseId", right_on="courseId", how="inner"
+            new_data = pd.read_csv(f"sync_files/{csv_name}").astype("str")
+        existing_data = self.return_cleaned_sync_data()
+        aliases = endpoints.CourseAliases(
+            self.service, self.sql, self.config
+        ).return_cleaned_sync_data()
+        existing_data = pd.merge(
+            existing_data,
+            aliases,
+            left_on="courseId",
+            right_on="courseId",
+            how="inner",
         )
-        data["alias"] = "d:" + data["alias"]
 
-        (left_only, right_only, _) = self.differences_between_frames(
-            data, db_df, "alias", "alias"
+        new_data["alias"] = "d:" + new_data["alias"]
+        (to_create, to_delete, _) = self.differences_between_frames(
+            new_data, existing_data, self.columns_to_merge_on
         )
-        to_create = data[data.alias.isin(left_only.alias)].reset_index(drop=True)
-        to_create = to_create.rename(
-            columns={"teacher_email": "ownerId", "alias": "id"}
-        )
-        to_delete = db_df[db_df.alias.isin(right_only.alias)].reset_index(drop=True)
+        to_create = to_create.drop("_merge", axis=1).dropna(axis="columns", how="all")
+        to_delete = to_delete.drop("_merge", axis=1).dropna(axis="columns", how="all")
 
         batch_results = []
         quota_exceeded = False
         remaining_requests = []
         request_index = {}
 
-        if len(to_create) == 0:
-            logging.info(f"{self.classname()}: No new items to create.")
-            return
-
+        logging.info(f"{self.classname()}: {len(to_create)} new items to create.")
         for idx, item in enumerate(to_create.to_dict(orient="records")):
             request = self.create_new_item(item)
             request_index[str(idx)] = request
             remaining_requests.append((request, str(idx)))
+
+        if self.should_delete_on_sync:
+            logging.info(f"{self.classname()}: {len(to_delete)} new items to delete.")
+            num_requests = len(to_create)
+            for idx, item in enumerate(to_delete.to_dict(orient="records")):
+                request = self.delete_item(item)
+                request_index[str(idx + num_requests)] = request
+                remaining_requests.append((request, str(idx + num_requests)))
 
         def callback(request_id, response, exception):
             """A local callback for batch requests when they have completed."""
@@ -399,7 +422,7 @@ class EndPoint:
 
             # Process the results of the batch.
             logging.debug(
-                f"{self.classname()}: successfully created {len(batch_results)} items."
+                f"{self.classname()}: successfully synced {len(batch_results)} items."
             )
             batch_results = []
 
