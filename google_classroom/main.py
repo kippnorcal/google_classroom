@@ -68,7 +68,7 @@ def main(config):
     sql = db_generator(config)
     pull_data(config, creds, sql)
     if config.SYNC:
-        sync_data(config, creds, sql)
+        sync_all_data(config, creds, sql)
 
 
 def pull_data(config, creds, sql):
@@ -160,10 +160,10 @@ def pull_data(config, creds, sql):
         Meet(admin_reports_service, sql, config).batch_pull_data()
 
 
-def sync_data(config, creds, sql):
+def sync_all_data(config, creds, sql):
     classroom_service = build("classroom", "v1", credentials=creds)
-    result = Courses(classroom_service, sql, config).sync_data()
-    print(result)
+    (to_create, to_delete) = Courses(classroom_service, sql, config).sync_data()
+    print("Data syncing is not yet available.")
 
 
 if __name__ == "__main__":

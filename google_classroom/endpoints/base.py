@@ -8,6 +8,7 @@ from tenacity import stop_after_attempt, wait_exponential, Retrying
 from sqlalchemy.schema import DropTable
 from sqlalchemy.exc import NoSuchTableError, InvalidRequestError
 from timer import elapsed
+import endpoints
 
 
 class EndPoint:
@@ -273,5 +274,57 @@ class EndPoint:
                 )
                 time.sleep(20)
 
-    def sync_data(self):
-        return "Data syncing is not yet available."
+    def differences_between_frames(self, df1, df2, left_on, right_on):
+        """
+        Merges two dataframes and splits them by which one a row comes from.
+
+        Parameters:
+            df1:        The first dataframe to be compared.
+            df2:        The second dataframe to be compared.
+            left_on:    The column in df1 to match the first dataframe to the second.
+            right_on:   The column in df2 to match the second dataframe to the first.
+
+        Returns:
+            left_only:  A dataframe containing data only found in df1.
+            right_only: A dataframe containing data only found in df2.
+            both:       A dataframe containing data found in both df1 and df2.
+        """
+        merged = pd.merge(
+            df1,
+            df2,
+            left_on=left_on,
+            right_on=right_on,
+            how="outer",
+            indicator=True,
+        )
+        left_only = merged[merged["_merge"] == "left_only"].reset_index(drop=True)
+        right_only = merged[merged["_merge"] == "right_only"].reset_index(drop=True)
+        both = merged[merged["_merge"] == "both"].reset_index(drop=True)
+
+        return (left_only, right_only, both)
+
+    def return_cleaned_sync_data(self):
+        """
+        Any cleaning that must be done to provide usable data for syncing.
+        Can be overwritten by subclasses in case of special logic.
+        """
+        return self.return_all_data().astype("str")
+
+    def sync_data(self, data=None):
+        if data is None:
+            csv_name = f"{self.classname().lower()}.csv"
+            data = pd.read_csv(f"sync_files/{csv_name}").astype("str")
+        db_df = self.return_cleaned_sync_data()
+        aliases = endpoints.CourseAliases(self.service, self.sql, self.config)
+        alias_df = aliases.return_cleaned_sync_data()
+        db_df = pd.merge(
+            db_df, alias_df, left_on="courseId", right_on="courseId", how="inner"
+        )
+        data["alias"] = "d:" + data["alias"]
+
+        (left_only, right_only, _) = self.differences_between_frames(
+            data, db_df, "alias", "alias"
+        )
+        to_create = data[data.alias.isin(left_only.alias)].reset_index(drop=True)
+        to_delete = db_df[db_df.alias.isin(right_only.alias)].reset_index(drop=True)
+        return (to_create, to_delete)

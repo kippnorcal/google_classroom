@@ -32,3 +32,10 @@ class Courses(EndPoint):
 
     def filter_data(self, dataframe):
         return dataframe[dataframe.updateTime >= self.config.SCHOOL_YEAR_START]
+
+    def return_cleaned_sync_data(self):
+        df = self.return_all_data().astype("str")
+        df = df[df["courseState"] == "ACTIVE"]
+        df = df.rename(columns={"id": "courseId"})
+        df = df[["courseId", "name", "section"]]
+        return df.astype("str")
