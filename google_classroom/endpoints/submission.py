@@ -1,5 +1,5 @@
+import logging
 from endpoints.base import EndPoint
-from sqlalchemy import text
 
 
 class StudentSubmissions(EndPoint):
@@ -114,7 +114,11 @@ class StudentSubmissions(EndPoint):
         return new_records
 
     def perform_cleanup(self):
-        with open("sql/remove_duplicates.sql") as sql_file:
-            escaped_sql = text(sql_file.read())
-            with self.sql.engine.connect().execution_options(autocommit=True) as conn:
-                conn.execute(escaped_sql)
+        logging.info(f"{self.classname()}: Removing duplicates.")
+        all_data = self.return_all_data()
+        cleaned_data = all_data.drop_duplicates(subset=["id"], keep="last")
+        log = f"Condensed database from {len(all_data)} to {len(cleaned_data)} rows."
+        logging.debug(f"{self.classname()}: " + log)
+        self.sql.insert_into(
+            self.table_name, cleaned_data, if_exists="replace", chunksize=10000
+        )
