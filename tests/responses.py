@@ -376,7 +376,7 @@ STUDENT_SUBMISSION_SOLUTION = pd.DataFrame(
     {
         "courseId": ["1", "2", "3"],
         "courseWorkId": ["123", "456", "789"],
-        "id": ["abc", "def", "ghi"],
+        "id": ["abc", "abC", "ghi"],
         "userId": ["6", "7", "8"],
         "creationTime": [
             pd.to_datetime("2020-04-05 19:41:15.29"),
@@ -481,7 +481,7 @@ STUDENT_SUBMISSION_RESPONSE = {
         {
             "courseId": "2",
             "courseWorkId": "456",
-            "id": "def",
+            "id": "abC",
             "userId": "7",
             "creationTime": "2020-04-01T17:44:34.89Z",
             "updateTime": "2020-04-02T17:44:34.89Z",

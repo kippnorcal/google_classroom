@@ -114,7 +114,17 @@ class StudentSubmissions(EndPoint):
         return new_records
 
     def perform_cleanup(self):
-        with open("sql/remove_duplicates.sql") as sql_file:
+        if self.config.DB_TYPE == "mssql":
+            # Google's submission IDs are case sensitive while MSSQL is not, so this
+            # converts the relevant MSSQL column to case sensitivity.
+            with open("sql/student_submission_mssql_case_sensitive.sql") as sql_file:
+                escaped_sql = text(sql_file.read())
+                with self.sql.engine.connect().execution_options(
+                    autocommit=True
+                ) as conn:
+                    conn.execute(escaped_sql)
+
+        with open("sql/student_submission_remove_duplicates.sql") as sql_file:
             escaped_sql = text(sql_file.read())
             with self.sql.engine.connect().execution_options(autocommit=True) as conn:
                 conn.execute(escaped_sql)
