@@ -12,6 +12,8 @@ class Teachers(EndPoint):
         ]
         self.request_key = "teachers"
         self.batch_size = config.TEACHERS_BATCH_SIZE
+        self.columns_to_merge_on = ["alias", "emailAddress"]
+        self.should_delete_on_sync = False
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         return (
@@ -29,3 +31,17 @@ class Teachers(EndPoint):
             record["fullName"] = record.get("profile").get("name").get("fullName")
             record["emailAddress"] = record.get("profile").get("emailAddress")
         return records
+
+    def create_new_item(self, teacher):
+        return (
+            self.service.courses()
+            .teachers()
+            .create(courseId=teacher["alias"], body={"userId": teacher["emailAddress"]})
+        )
+
+    def delete_item(self, teacher):
+        return (
+            self.service.courses()
+            .teachers()
+            .delete(courseId=teacher["courseId"], userId=teacher["userId"])
+        )
