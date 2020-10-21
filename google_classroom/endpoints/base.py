@@ -6,7 +6,7 @@ import time
 import pandas as pd
 from tenacity import stop_after_attempt, wait_exponential, Retrying
 from sqlalchemy.schema import DropTable
-from sqlalchemy.exc import NoSuchTableError, InvalidRequestError
+from sqlalchemy.exc import NoSuchTableError
 from timer import elapsed
 import endpoints
 
@@ -47,7 +47,7 @@ class EndPoint:
             return pd.read_sql_table(
                 self.table_name, con=self.sql.engine, schema=self.sql.schema
             )
-        except InvalidRequestError as error:
+        except ValueError as error:
             logging.debug(error)
             return None
 

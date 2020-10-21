@@ -157,7 +157,7 @@ def pull_data(config, creds, sql):
 
     # Get Meet data
     if config.PULL_MEET:
-        Meet(admin_reports_service, sql, config).batch_pull_data()
+        Meet(admin_reports_service, sql, config).batch_pull_data(overwrite=False)
 
 
 def sync_all_data(config, creds, sql):
