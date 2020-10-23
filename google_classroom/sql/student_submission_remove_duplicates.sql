@@ -1,18 +1,13 @@
-WITH
-    duplicates
-    AS
-    (
-        SELECT
-            id, assignedGrade, updateTime,
-            ROW_NUMBER() OVER (
-            PARTITION BY
-                id
-            ORDER BY
-                updateTime
-            DESC
+WITH duplicates AS (
+    SELECT
+        "id",
+        "uniqueId",
+        ROW_NUMBER() OVER (
+            PARTITION BY "id"
+            ORDER BY "updateTime" DESC
         ) row_num
-        FROM GoogleClassroom_StudentSubmissions
-    )
+    FROM {schema}."GoogleClassroom_StudentSubmissions"
+)
 DELETE
-FROM duplicates
-WHERE row_num > 1;
+FROM {schema}."GoogleClassroom_StudentSubmissions"
+WHERE "uniqueId" in (select "uniqueId" from duplicates where "row_num" > 1);
