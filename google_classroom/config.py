@@ -128,6 +128,7 @@ class Config(object):
     INVITATIONS_BATCH_SIZE = int(os.getenv("INVITATIONS_BATCH_SIZE") or 1000)
     ANNOUNCEMENTS_BATCH_SIZE = int(os.getenv("ANNOUNCEMENTS_BATCH_SIZE") or 1000)
     MEET_BATCH_SIZE = int(os.getenv("MEET_BATCH_SIZE") or 1000)
+    SYNC_BATCH_SIZE = 5
     PAGE_SIZE = int(os.getenv("PAGE_SIZE") or 1000)
 
 

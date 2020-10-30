@@ -367,9 +367,13 @@ class EndPoint:
                 # 429: Quota exceeded.
                 # Add the original request back to retry later.
                 if status == 429:
-                    remaining_requests.append(request_index[request_id])
+                    remaining_requests.append((request_index[request_id], request_id))
                     nonlocal quota_exceeded
                     quota_exceeded = True
+                # 500: Internal error occurred.
+                # Happens with large batches, so keep trying on it.
+                if status == 500:
+                    remaining_requests.append((request_index[request_id], request_id))
                 logging.debug(exception)
                 return
 
@@ -386,7 +390,8 @@ class EndPoint:
             )
             batch = self.service.new_batch_http_request(callback=callback)
             current_batch = 0
-            while len(remaining_requests) > 0 and current_batch < self.batch_size:
+            batch_limit = self.config.SYNC_BATCH_SIZE
+            while len(remaining_requests) > 0 and current_batch < batch_limit:
                 current_batch += 1
                 (request, request_id) = remaining_requests.pop()
                 batch.add(request, request_id=request_id)
@@ -396,6 +401,7 @@ class EndPoint:
             logging.debug(
                 f"{self.classname()}: successfully created {len(batch_results)} items."
             )
+            batch_results = []
 
             # Pause if quota exceeded. 20s because the quota is a sliding time window.
             if quota_exceeded:
