@@ -20,6 +20,7 @@ class Courses(EndPoint):
             "section",
             "teacherGroupEmail",
             "updateTime",
+            "calendarId",
         ]
         self.request_key = "courses"
         self.batch_size = config.COURSES_BATCH_SIZE
