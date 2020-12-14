@@ -126,6 +126,7 @@ COURSE_SOLUTION = pd.DataFrame(
             pd.to_datetime("2020-04-05 19:41:14.30"),
             pd.to_datetime("2020-04-01 20:54:08.53"),
         ],
+        "calendarId": ["c1@group.calendar.google.com", "c2@group.calendar.google.com"],
     }
 )
 COURSE_RESPONSE = {
@@ -145,6 +146,7 @@ COURSE_RESPONSE = {
             "section": "1",
             "teacherGroupEmail": "science_teachers@class.com",
             "updateTime": "2020-04-05T19:41:14.30Z",
+            "calendarId": "c1@group.calendar.google.com",
         },
         {
             "id": "23456",
@@ -161,6 +163,7 @@ COURSE_RESPONSE = {
             "section": "2",
             "teacherGroupEmail": "math_teachers@class.com",
             "updateTime": "2020-04-01T20:54:08.53Z",
+            "calendarId": "c2@group.calendar.google.com",
         },
     ]
 }
