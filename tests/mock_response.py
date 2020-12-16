@@ -56,6 +56,15 @@ class FakeRequest:
         return self.result
 
 
+class FakeCreateRequest:
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+    def execute(self):
+        pass
+
+
 class FakeEndpoint:
     def __init__(self, result):
         self.result = result
@@ -65,6 +74,9 @@ class FakeEndpoint:
 
     def get(self, *args, **kwargs):
         return FakeRequest(self.result, *args, **kwargs)
+
+    def create(self, *args, **kwargs):
+        return FakeCreateRequest(*args, **kwargs)
 
 
 class FakeService:

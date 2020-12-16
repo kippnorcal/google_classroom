@@ -311,6 +311,20 @@ class EndPoint:
         return self.return_all_data().astype("str")
 
     def sync_data(self, data=None):
+        """
+        Syncs data back to the relevant endpoint.
+
+        Parameters:
+            data:       (optional) Data to sync. If not provided, uses a csv in the
+                        sync_files folder titled {classname}.csv
+
+        Returns:
+            to_create:  A list of objects the sync process has created.
+            to_delete:  A list of objects the sync process may have deleted. Deletion
+                        or archiving only happens for certain endpoints.
+
+        Return values can be ignored, and are primarily there for testing purposes.
+        """
         if data is None:
             csv_name = f"{self.classname().lower()}.csv"
             data = pd.read_csv(f"sync_files/{csv_name}").astype("str")
@@ -326,5 +340,14 @@ class EndPoint:
             data, db_df, "alias", "alias"
         )
         to_create = data[data.alias.isin(left_only.alias)].reset_index(drop=True)
+        to_create = to_create.rename(
+            columns={"teacher_email": "ownerId", "alias": "id"}
+        )
         to_delete = db_df[db_df.alias.isin(right_only.alias)].reset_index(drop=True)
+
+        for item in to_create.to_dict(orient="records"):
+            request = self.create_new_item(item)
+            result = request.execute()
+            logging.info(f"{self.classname()}: Created class: {result}")
+
         return (to_create, to_delete)
