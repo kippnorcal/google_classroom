@@ -30,3 +30,9 @@ class Announcements(EndPoint):
                 pageSize=self.config.PAGE_SIZE,
             )
         )
+
+    def preprocess_records(self, records):
+        for record in records:
+            if "text" in record:
+                record["text"] = record["text"].replace("\x00", "")
+        return records
