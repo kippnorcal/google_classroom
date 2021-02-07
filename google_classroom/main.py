@@ -163,6 +163,7 @@ def pull_data(config, creds, sql):
 def sync_all_data(config, creds, sql):
     classroom_service = build("classroom", "v1", credentials=creds)
     Courses(classroom_service, sql, config).sync_data()
+    Students(classroom_service, sql, config).sync_data()
 
 
 if __name__ == "__main__":

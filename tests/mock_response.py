@@ -56,7 +56,7 @@ class FakeRequest:
         return self.result
 
 
-class FakeCreateRequest:
+class FakeSyncRequest:
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
@@ -76,7 +76,10 @@ class FakeEndpoint:
         return FakeRequest(self.result, *args, **kwargs)
 
     def create(self, *args, **kwargs):
-        return FakeCreateRequest(*args, **kwargs)
+        return FakeSyncRequest(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        return FakeSyncRequest(*args, **kwargs)
 
 
 class FakeService:

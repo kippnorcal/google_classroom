@@ -1,5 +1,6 @@
 import pandas as pd
 
+# COURSE SYNC DATA
 # Note on the data:
 # They are designed to test a few different scenarios:
 # 1. The "normal" flows.
@@ -21,7 +22,7 @@ ALIAS_DATA = pd.DataFrame(
         "alias": ["d:123", "d:234", "d:345", "d:456", "d:111"],
     }
 )
-SOURCE_DATA = pd.DataFrame(
+COURSE_SYNC_DATA = pd.DataFrame(
     {
         "alias": ["123", "234", "678", "789"],
         "name": ["Biology", "Math", "History", "Computer Science"],
@@ -30,14 +31,49 @@ SOURCE_DATA = pd.DataFrame(
     }
 )
 
-TO_CREATE_SOLUTION = pd.DataFrame(
+TO_CREATE_COURSE_SOLUTION = pd.DataFrame(
     {
-        "id": ["d:678", "d:789"],
+        "alias": ["d:678", "d:789"],
         "name": ["History", "Computer Science"],
         "section": ["2", "2"],
-        "ownerId": ["a@b.com", "a@b.com"],
+        "teacher_email": ["a@b.com", "a@b.com"],
     }
 )
-TO_DELETE_SOLUTION = pd.DataFrame(
-    {"courseId": ["3"], "name": ["English"], "section": ["2"], "alias": ["d:345"]}
+TO_DELETE_COURSE_SOLUTION = pd.DataFrame(
+    {"alias": ["d:345"], "name": ["English"], "section": ["2"], "courseId": ["3"]}
+)
+
+# STUDENT SYNC DATA
+
+STUDENT_DATA = pd.DataFrame(
+    {
+        "courseId": ["1", "1", "2", "2"],
+        "userId": ["1", "2", "1", "3"],
+        "fullName": ["User1", "User2", "User1", "User3"],
+        "emailAddress": ["1@a.com", "2@a.com", "1@a.com", "3@a.com"],
+    }
+)
+
+STUDENT_SYNC_DATA = pd.DataFrame(
+    {
+        "alias": ["123", "234", "345"],
+        "emailAddress": ["1@a.com", "2@a.com", "1@a.com"],
+    }
+)
+
+TO_CREATE_STUDENT_SOLUTION = pd.DataFrame(
+    {
+        "alias": ["d:234", "d:345"],
+        "emailAddress": ["2@a.com", "1@a.com"],
+    }
+)
+
+TO_DELETE_STUDENT_SOLUTION = pd.DataFrame(
+    {
+        "alias": ["d:123", "d:234", "d:234"],
+        "emailAddress": ["2@a.com", "1@a.com", "3@a.com"],
+        "courseId": ["1", "2", "2"],
+        "userId": ["2", "1", "3"],
+        "fullName": ["User2", "User1", "User3"],
+    }
 )
