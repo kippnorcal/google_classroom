@@ -297,8 +297,7 @@ class EndPoint:
         Parameters:
             df1:        The first dataframe to be compared.
             df2:        The second dataframe to be compared.
-            left_on:    The column in df1 to match the first dataframe to the second.
-            right_on:   The column in df2 to match the second dataframe to the first.
+            merge_on:   The column to match the first dataframe to the second.
 
         Returns:
             left_only:  A dataframe containing data only found in df1.
@@ -308,8 +307,7 @@ class EndPoint:
         merged = pd.merge(
             df1,
             df2,
-            left_on=merge_on,
-            right_on=merge_on,
+            on=merge_on,
             how="outer",
             indicator=True,
         )
