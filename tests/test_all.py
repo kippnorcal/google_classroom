@@ -39,12 +39,16 @@ from sync_data import (
     COURSE_DATA,
     ALIAS_DATA,
     STUDENT_DATA,
+    TEACHER_DATA,
     COURSE_SYNC_DATA,
     STUDENT_SYNC_DATA,
+    TEACHER_SYNC_DATA,
     TO_CREATE_COURSE_SOLUTION,
     TO_DELETE_COURSE_SOLUTION,
     TO_CREATE_STUDENT_SOLUTION,
     TO_DELETE_STUDENT_SOLUTION,
+    TO_CREATE_TEACHER_SOLUTION,
+    TO_DELETE_TEACHER_SOLUTION,
 )
 
 
@@ -189,3 +193,17 @@ class TestSync:
         courses._drop_table()
         aliases._drop_table()
         students._drop_table()
+
+    def test_sync_teachers(self):
+        courses = Courses(self.service, self.sql, self.config)
+        aliases = CourseAliases(self.service, self.sql, self.config)
+        teachers = Teachers(self.service, self.sql, self.config)
+        self.sql.insert_into(courses.table_name, COURSE_DATA)
+        self.sql.insert_into(aliases.table_name, ALIAS_DATA)
+        self.sql.insert_into(teachers.table_name, TEACHER_DATA)
+        (to_create, to_delete) = teachers.sync_data(TEACHER_SYNC_DATA)
+        assert to_create.equals(TO_CREATE_TEACHER_SOLUTION)
+        assert to_delete.equals(TO_DELETE_TEACHER_SOLUTION)
+        courses._drop_table()
+        aliases._drop_table()
+        teachers._drop_table()

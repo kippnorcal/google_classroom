@@ -77,3 +77,38 @@ TO_DELETE_STUDENT_SOLUTION = pd.DataFrame(
         "fullName": ["User2", "User1", "User3"],
     }
 )
+
+# TEACHER SYNC DATA
+
+TEACHER_DATA = pd.DataFrame(
+    {
+        "courseId": ["1", "1", "2", "2"],
+        "userId": ["91", "92", "91", "93"],
+        "fullName": ["Teacher1", "Teacher2", "Teacher1", "Teacher3"],
+        "emailAddress": ["t1@a.com", "t2@a.com", "t1@a.com", "t3@a.com"],
+    }
+)
+
+TEACHER_SYNC_DATA = pd.DataFrame(
+    {
+        "alias": ["123", "234", "345"],
+        "emailAddress": ["t1@a.com", "t2@a.com", "t1@a.com"],
+    }
+)
+
+TO_CREATE_TEACHER_SOLUTION = pd.DataFrame(
+    {
+        "alias": ["d:234", "d:345"],
+        "emailAddress": ["t2@a.com", "t1@a.com"],
+    }
+)
+
+TO_DELETE_TEACHER_SOLUTION = pd.DataFrame(
+    {
+        "alias": ["d:123", "d:234", "d:234"],
+        "emailAddress": ["t2@a.com", "t1@a.com", "t3@a.com"],
+        "courseId": ["1", "2", "2"],
+        "userId": ["92", "91", "93"],
+        "fullName": ["Teacher2", "Teacher1", "Teacher3"],
+    }
+)
