@@ -1,4 +1,5 @@
 import pandas as pd
+import copy
 
 ORG_UNIT_SOLUTION = pd.DataFrame(
     {
@@ -376,47 +377,54 @@ TEACHER_RESPONSE = {
 
 STUDENT_SUBMISSION_SOLUTION = pd.DataFrame(
     {
-        "courseId": ["1", "2"],
-        "courseWorkId": ["123", "456"],
-        "id": ["abc", "def"],
-        "userId": ["6", "7"],
+        "courseId": ["1", "2", "3"],
+        "courseWorkId": ["123", "456", "789"],
+        "id": ["abc", "abC", "ghi"],
+        "userId": ["6", "7", "8"],
         "creationTime": [
             pd.to_datetime("2020-04-05 19:41:15.29"),
             pd.to_datetime("2020-04-01 17:44:34.89"),
+            pd.to_datetime("2020-04-02 17:44:34.89"),
         ],
         "updateTime": [
             pd.to_datetime("2020-04-06 19:41:15.29"),
             pd.to_datetime("2020-04-02 17:44:34.89"),
+            pd.to_datetime("2020-04-03 17:44:34.89"),
         ],
-        "state": ["RETURNED", "RETURNED"],
-        "draftGrade": [30, 80],
-        "assignedGrade": [40, 95],
-        "courseWorkType": ["ASSIGNMENT", "ASSIGNMENT"],
+        "state": ["RETURNED", "RETURNED", "RETURNED"],
+        "draftGrade": [30, 80, 40],
+        "assignedGrade": [40, 95, 80],
+        "courseWorkType": ["ASSIGNMENT", "ASSIGNMENT", "ASSIGNMENT"],
         "createdTime": [
             pd.to_datetime("2020-04-02 19:41:15.29"),
             pd.to_datetime("2020-04-01 17:44:34.89"),
+            pd.to_datetime("2020-04-02 17:44:34.89"),
         ],
         "turnedInTimestamp": [
             pd.to_datetime("2020-04-09 19:41:15.29"),
             pd.to_datetime("2020-04-08 17:44:34.89"),
+            pd.to_datetime("2020-04-07 17:44:34.89"),
         ],
         "returnedTimestamp": [
             pd.to_datetime("2020-04-10 19:41:15.29"),
             pd.to_datetime("2020-04-09 17:44:34.89"),
+            pd.to_datetime("2020-04-13 17:44:34.89"),
         ],
-        "draftMaxPoints": [100, 100],
+        "draftMaxPoints": [100, 100, 90],
         "draftGradeTimestamp": [
             pd.to_datetime("2020-04-11 19:41:15.29"),
             pd.to_datetime("2020-04-10 17:44:34.89"),
+            pd.to_datetime("2020-04-12 17:44:34.89"),
         ],
-        "draftGraderId": ["80", "80"],
-        "assignedMaxPoints": [100, 100],
+        "draftGraderId": ["80", "80", "70"],
+        "assignedMaxPoints": [100, 100, 90],
         "assignedGradeTimestamp": [
             pd.to_datetime("2020-04-12 19:41:15.29"),
             pd.to_datetime("2020-04-11 17:44:34.89"),
+            pd.to_datetime("2020-04-14 17:44:34.89"),
         ],
-        "assignedGraderId": ["90", "90"],
-        "late": [True, False],
+        "assignedGraderId": ["90", "90", "90"],
+        "late": [True, False, False],
     }
 )
 STUDENT_SUBMISSION_RESPONSE = {
@@ -476,7 +484,7 @@ STUDENT_SUBMISSION_RESPONSE = {
         {
             "courseId": "2",
             "courseWorkId": "456",
-            "id": "def",
+            "id": "abC",
             "userId": "7",
             "creationTime": "2020-04-01T17:44:34.89Z",
             "updateTime": "2020-04-02T17:44:34.89Z",
@@ -523,8 +531,69 @@ STUDENT_SUBMISSION_RESPONSE = {
                 },
             ],
         },
+        {
+            "courseId": "3",
+            "courseWorkId": "789",
+            "id": "ghi",
+            "userId": "8",
+            "creationTime": "2020-04-02T17:44:34.89Z",
+            "updateTime": "2020-04-03T17:44:34.89Z",
+            "state": "RETURNED",
+            "draftGrade": 40,
+            "assignedGrade": 80,
+            "courseWorkType": "ASSIGNMENT",
+            "submissionHistory": [
+                {
+                    "stateHistory": {
+                        "state": "CREATED",
+                        "stateTimestamp": "2020-04-02T17:44:34.89Z",
+                    }
+                },
+                {
+                    "stateHistory": {
+                        "state": "TURNED_IN",
+                        "stateTimestamp": "2020-04-07T17:44:34.89Z",
+                    }
+                },
+                {
+                    "gradeHistory": {
+                        "pointsEarned": 40,
+                        "maxPoints": 90,
+                        "gradeTimestamp": "2020-04-12T17:44:34.89Z",
+                        "actorUserId": "70",
+                        "gradeChangeType": "DRAFT_GRADE_POINTS_EARNED_CHANGE",
+                    }
+                },
+                {
+                    "stateHistory": {
+                        "state": "RETURNED",
+                        "stateTimestamp": "2020-04-13T17:44:34.89Z",
+                    }
+                },
+                {
+                    "gradeHistory": {
+                        "pointsEarned": 80,
+                        "maxPoints": 90,
+                        "gradeTimestamp": "2020-04-14T17:44:34.89Z",
+                        "actorUserId": "90",
+                        "gradeChangeType": "ASSIGNED_GRADE_POINTS_EARNED_CHANGE",
+                    }
+                },
+            ],
+        },
     ]
 }
+STUDENT_SUBMISSION_RESPONSE_MODIFIED = copy.deepcopy(STUDENT_SUBMISSION_RESPONSE)
+STUDENT_SUBMISSION_RESPONSE_MODIFIED["studentSubmissions"][1]["assignedGrade"] = 90
+STUDENT_SUBMISSION_RESPONSE_MODIFIED["studentSubmissions"][1][
+    "updateTime"
+] = "2020-04-03T17:44:34.89Z"
+
+STUDENT_SUBMISSION_SOLUTION_MODIFIED = STUDENT_SUBMISSION_SOLUTION.copy(deep=True)
+STUDENT_SUBMISSION_SOLUTION_MODIFIED.at[1, "assignedGrade"] = 90
+STUDENT_SUBMISSION_SOLUTION_MODIFIED.at[1, "updateTime"] = pd.to_datetime(
+    "2020-04-03 17:44:34.89"
+)
 
 COURSEWORK_SOLUTION = pd.DataFrame(
     {

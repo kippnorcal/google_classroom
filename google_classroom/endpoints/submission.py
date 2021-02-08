@@ -1,4 +1,6 @@
 from endpoints.base import EndPoint
+from sqlalchemy import text
+from time import time
 
 
 class StudentSubmissions(EndPoint):
@@ -34,6 +36,7 @@ class StudentSubmissions(EndPoint):
             "assignedGradeTimestamp",
             "assignedGraderId",
             "late",
+            "uniqueId",
         ]
         self.request_key = "studentSubmissions"
         self.batch_size = config.SUBMISSIONS_BATCH_SIZE
@@ -106,8 +109,25 @@ class StudentSubmissions(EndPoint):
                 "assignedGrade": record.get("assignedGrade"),
                 "courseWorkType": record.get("courseWorkType"),
                 "late": record.get("late", False),
+                "uniqueId": record.get("id") + str(time()),
             }
             self._parse_state_history(record, parsed)
             self._parse_grade_history(record, parsed)
             new_records.append(parsed)
         return new_records
+
+    def perform_cleanup(self):
+        if self.config.DB_TYPE == "mssql":
+            # Google's submission IDs are case sensitive while MSSQL is not, so
+            # this converts the relevant MSSQL column to case sensitivity.
+            with open("sql/student_submission_mssql_case_sensitive.sql") as sql_file:
+                escaped_sql = text(sql_file.read().format(schema=self.config.DB_SCHEMA))
+                with self.sql.engine.connect().execution_options(
+                    autocommit=True
+                ) as conn:
+                    conn.execute(escaped_sql)
+
+        with open("sql/student_submission_remove_duplicates.sql") as sql_file:
+            escaped_sql = text(sql_file.read().format(schema=self.config.DB_SCHEMA))
+            with self.sql.engine.connect().execution_options(autocommit=True) as conn:
+                conn.execute(escaped_sql)

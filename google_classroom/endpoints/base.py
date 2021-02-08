@@ -6,7 +6,7 @@ import time
 import pandas as pd
 from tenacity import stop_after_attempt, wait_exponential, Retrying
 from sqlalchemy.schema import DropTable
-from sqlalchemy.exc import NoSuchTableError, InvalidRequestError
+from sqlalchemy.exc import NoSuchTableError
 from timer import elapsed
 import endpoints
 
@@ -47,7 +47,7 @@ class EndPoint:
             return pd.read_sql_table(
                 self.table_name, con=self.sql.engine, schema=self.sql.schema
             )
-        except InvalidRequestError as error:
+        except ValueError as error:
             logging.debug(error)
             return None
 
@@ -71,6 +71,13 @@ class EndPoint:
         Intended to be overridden by subclasses as needed.
         """
         return dataframe
+
+    def perform_cleanup(self):
+        """
+        Any cleanup that needs to be done after inserting all data into the database.
+        Intended to be overridden by subclasses as needed.
+        """
+        pass
 
     def _process_and_filter_records(self, records):
         """Processes incoming records and converts them into a cleaned dataframe"""
@@ -119,6 +126,23 @@ class EndPoint:
             self.sql.engine.execute(DropTable(table))
         except NoSuchTableError as error:
             logging.debug(f"{error}: Attempted deletion, but no table exists.")
+
+    def _alert_if_migration_needed(self):
+        """
+        Alerts the user that a migration is needed because the columns have changed from
+        the existing table.
+        """
+        try:
+            table = self.sql.table(self.table_name)
+            table_columns = [column.key for column in table.c]
+            if table_columns != self.columns:
+                logging.info(f"{self.classname()}: Migration required.")
+                logging.info(f"{self.classname()}: Please drop table to proceed.")
+                logging.debug(f"{self.classname()}: Existing columns: {table_columns}")
+                logging.debug(f"{self.classname()}: New columns: {self.columns}")
+                return
+        except NoSuchTableError:
+            pass
 
     def _generate_request_id(self, course_id, date, next_page_token, page):
         """
@@ -173,6 +197,8 @@ class EndPoint:
         """
         if overwrite:
             self._drop_table()
+        else:
+            self._alert_if_migration_needed()
 
         if self.config.DEBUGFILE:
             self._delete_local_file()
@@ -273,6 +299,8 @@ class EndPoint:
                     f"{self.classname()}: Quota exceeded. Pausing for 20 seconds..."
                 )
                 time.sleep(20)
+
+        self.perform_cleanup()
 
     def differences_between_frames(self, df1, df2, left_on, right_on):
         """

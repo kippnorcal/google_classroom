@@ -1,5 +1,6 @@
 import pandas as pd
 from config import TestConfig, db_generator
+from sqlalchemy.schema import CreateSchema, DropSchema
 
 from endpoints import (
     Announcements,
@@ -30,6 +31,7 @@ from responses import (
     ORG_UNIT_SOLUTION,
     STUDENT_SOLUTION,
     STUDENT_SUBMISSION_SOLUTION,
+    STUDENT_SUBMISSION_SOLUTION_MODIFIED,
     STUDENT_USAGE_SOLUTION,
     TEACHER_SOLUTION,
     TOPIC_SOLUTION,
@@ -49,6 +51,10 @@ class TestPulls:
         self.config = TestConfig
         self.sql = db_generator(self.config)
         self.service = FakeService()
+        self.sql.engine.execute(CreateSchema(self.config.DB_SCHEMA))
+
+    def teardown(self):
+        self.sql.engine.execute(DropSchema(self.config.DB_SCHEMA))
 
     def test_get_org_units(self):
         self.generic_get_test(
@@ -136,8 +142,38 @@ class TestPulls:
         self.generic_get_test(
             StudentSubmissions(self.service, self.sql, self.config),
             STUDENT_SUBMISSION_SOLUTION,
-            course_ids=["1", "2"],
+            course_ids=["1", "2", "3"],
         )
+
+    def test_write_new_submissions(self):
+        """
+        Tests that new submissions will update and append rather than eliminate old
+        submissions in the database.
+        """
+        # Check that the first call only retrieves data from the first two courses.
+        submissions = StudentSubmissions(self.service, self.sql, self.config)
+        submissions.batch_pull_data(course_ids=["1", "2"], overwrite=False)
+        result = pd.read_sql_table(
+            submissions.table_name, con=self.sql.engine, schema=self.sql.schema
+        )
+
+        # Drops the uniqueID column, which is generated on the fly from timestamps.
+        result = result.drop("uniqueId", axis=1, errors="ignore")
+        assert result.equals(STUDENT_SUBMISSION_SOLUTION.head(2))
+
+        # With the modified response, check that the 2nd course data is updated while
+        # the 3rd course data is appended.
+        new_service = FakeService(modified_response=True)
+        submissions_new = StudentSubmissions(new_service, self.sql, self.config)
+        submissions_new.batch_pull_data(course_ids=["2", "3"], overwrite=False)
+        result = pd.read_sql_table(
+            submissions_new.table_name, con=self.sql.engine, schema=self.sql.schema
+        )
+
+        # Drops the uniqueID column, which is generated on the fly from timestamps.
+        result = result.drop("uniqueId", axis=1, errors="ignore")
+        assert result.equals(STUDENT_SUBMISSION_SOLUTION_MODIFIED)
+        submissions._drop_table()
 
     def test_get_coursework(self):
         self.generic_get_test(
@@ -151,6 +187,8 @@ class TestPulls:
         result = pd.read_sql_table(
             endpoint.table_name, con=self.sql.engine, schema=self.sql.schema
         )
+        # Drops the uniqueID column, which is generated on the fly from timestamps.
+        result = result.drop("uniqueId", axis=1, errors="ignore")
         assert result.equals(solution)
         endpoint._drop_table()
 
@@ -160,6 +198,10 @@ class TestSync:
         self.config = TestConfig
         self.sql = db_generator(self.config)
         self.service = FakeService()
+        self.sql.engine.execute(CreateSchema(self.config.DB_SCHEMA))
+
+    def teardown(self):
+        self.sql.engine.execute(DropSchema(self.config.DB_SCHEMA))
 
     def test_sync_courses(self):
         courses = Courses(self.service, self.sql, self.config)
@@ -169,3 +211,5 @@ class TestSync:
         (to_create, to_delete) = courses.sync_data(SOURCE_DATA)
         assert to_create.equals(TO_CREATE_SOLUTION)
         assert to_delete.equals(TO_DELETE_SOLUTION)
+        courses._drop_table()
+        aliases._drop_table()

@@ -137,7 +137,7 @@ class TestConfig(Config):
     DB = "master"
     DB_USER = "sa"
     DB_PWD = "Google_Classroom_Pass1"
-    DB_SCHEMA = "dbo"
+    DB_SCHEMA = "custom"
     DB_PORT = "1433"
     DEBUG = True
     DEBUGFILE = False
