@@ -1,3 +1,4 @@
+import logging
 import pandas as pd
 from datetime import datetime
 
@@ -41,11 +42,15 @@ class StudentUsage(EndPoint):
             row = {}
             row["Email"] = record.get("entity").get("userEmail")
             row["AsOfDate"] = record.get("date")
-            row["LastUsedTime"] = self._get_date_from_params(record.get("parameters"))
+            row["LastUsedTime"] = self._get_date_from_record(record)
             row["ImportDate"] = datetime.today().strftime("%Y-%m-%d")
             new_records.append(row)
         return new_records
 
-    def _get_date_from_params(self, parameters):
+    def _get_date_from_record(self, record):
+        if "parameters" not in record:
+            logging.debug(f"{self.classname()}: Parameters not in record {record}.")
+        parameters = record.get("parameters", [])
         for parameter in parameters:
             return parameter.get("datetimeValue")
+        return "1970-01-01T00:00:00.00Z"
