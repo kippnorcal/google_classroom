@@ -114,7 +114,6 @@ def pull_data(config, creds, sql):
         or config.PULL_STUDENTS
         or config.PULL_TEACHERS
         or config.PULL_SUBMISSIONS
-        or config.PULL_ALIASES
         or config.PULL_INVITATIONS
         or config.PULL_ANNOUNCEMENTS
         or config.PULL_MEET
@@ -133,6 +132,8 @@ def pull_data(config, creds, sql):
 
     # Get course aliases
     if config.PULL_ALIASES:
+        courses = Courses(classroom_service, sql, config).return_all_data()
+        course_ids = courses.id.unique()
         CourseAliases(classroom_service, sql, config).batch_pull_data(course_ids)
 
     # Get course topics
