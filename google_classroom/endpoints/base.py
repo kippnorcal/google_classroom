@@ -6,7 +6,7 @@ import time
 import pandas as pd
 from tenacity import stop_after_attempt, wait_exponential, Retrying
 from sqlalchemy.schema import DropTable
-from sqlalchemy.exc import NoSuchTableError, InvalidRequestError
+from sqlalchemy.exc import NoSuchTableError, InvalidRequestError, DataError
 from timer import elapsed
 import endpoints
 
@@ -95,7 +95,19 @@ class EndPoint:
         logging.debug(
             f"{self.classname()}: inserting {len(df)} records into {self.table_name}."
         )
-        self.sql.insert_into(self.table_name, df, chunksize=10000)
+        try:
+            self.sql.insert_into(self.table_name, df, chunksize=10000)
+        except DataError:
+            # In case of failure, at least upload one-by-one to identify the bad row.
+            split_dfs = [df.loc[[i]] for i in df.index]
+            for df_small in split_dfs:
+                try:
+                    self.sql.insert_into(self.table_name, df_small)
+                except DataError as error:
+                    pd.set_option("display.max_columns", None)
+                    logging.debug(
+                        f"{self.classname()}: {error}, unable to upload {df_small}"
+                    )
 
     def _delete_local_file(self):
         """Deletes the local debug json file in /data."""
