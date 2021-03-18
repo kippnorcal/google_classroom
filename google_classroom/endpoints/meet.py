@@ -1,4 +1,6 @@
 from endpoints.base import EndPoint
+from datetime import timedelta
+import logging
 
 
 class Meet(EndPoint):
@@ -22,6 +24,7 @@ class Meet(EndPoint):
         ]
         self.request_key = "items"
         self.batch_size = config.MEET_BATCH_SIZE
+        self.last_date = None
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         """Request Google Meet events (currently only call_ended)"""
@@ -31,6 +34,27 @@ class Meet(EndPoint):
             "eventName": "call_ended",
             "pageToken": next_page_token,
         }
+        # Meet data is added incrementally, because the data is very large. However,
+        # the data Google provides is not always fully up-to-date. As a result, the
+        # most reliable way to obtain incremental updated data is to drop the last
+        # 24 hours of data and then request data from Google starting at that point.
+        if next_page_token is None:
+            # Only set the last_date on the first request.
+            data = self.return_all_data()
+            if data is not None and data.item_time.count() > 0:
+                last_date = data.item_time.max()
+                table = self.sql.table(self.table_name)
+                last_date = last_date - timedelta(hours=24)
+                delete_query = table.delete().where(table.c.item_time > last_date)
+                self.sql.engine.execute(delete_query)
+                last_date = last_date.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+                logging.debug(f"{self.classname()}: pulling data from {last_date}.")
+                self.last_date = last_date
+            else:
+                self.last_date = None
+        if self.last_date:
+            options["startTime"] = self.last_date
+
         return self.service.activities().list(**options)
 
     def preprocess_records(self, records):

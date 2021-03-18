@@ -27,8 +27,7 @@ class Courses(EndPoint):
 
     def request_data(self, course_id=None, date=None, next_page_token=None):
         return self.service.courses().list(
-            pageToken=next_page_token,
-            pageSize=self.config.PAGE_SIZE,
+            pageToken=next_page_token, pageSize=self.config.PAGE_SIZE,
         )
 
     def filter_data(self, dataframe):
