@@ -6,7 +6,7 @@ import time
 import pandas as pd
 from tenacity import stop_after_attempt, wait_exponential, Retrying
 from sqlalchemy.schema import DropTable
-from sqlalchemy.exc import NoSuchTableError, InvalidRequestError, DataError
+from sqlalchemy.exc import NoSuchTableError, DataError
 from timer import elapsed
 import endpoints
 
@@ -304,12 +304,7 @@ class EndPoint:
             both:       A dataframe containing data found in both df1 and df2.
         """
         merged = pd.merge(
-            df1,
-            df2,
-            left_on=left_on,
-            right_on=right_on,
-            how="outer",
-            indicator=True,
+            df1, df2, left_on=left_on, right_on=right_on, how="outer", indicator=True,
         )
         left_only = merged[merged["_merge"] == "left_only"].reset_index(drop=True)
         right_only = merged[merged["_merge"] == "right_only"].reset_index(drop=True)
