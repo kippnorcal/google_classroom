@@ -20,7 +20,7 @@ jobs:
         pipenv install --skip-lock
     - name: Run black
       run: |
-        pipenv install "black~=20.8" --skip-lock
+        pipenv install "black~=20.8b" --skip-lock
         pipenv run black --check .
     - name: Run flake8
       run: |
