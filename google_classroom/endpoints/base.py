@@ -4,11 +4,16 @@ import logging
 import os
 import time
 import pandas as pd
-from tenacity import stop_after_attempt, wait_exponential, Retrying
+from tenacity import stop_after_attempt, wait_exponential, retry, Retrying
 from sqlalchemy.schema import DropTable
 from sqlalchemy.exc import NoSuchTableError, DataError
 from timer import elapsed
 import endpoints
+
+RETRY_PARAMS = {
+    "stop": stop_after_attempt(5),
+    "wait": wait_exponential(multiplier=1, min=4, max=10),
+}
 
 
 class EndPoint:
@@ -96,7 +101,8 @@ class EndPoint:
             f"{self.classname()}: inserting {len(df)} records into {self.table_name}."
         )
         try:
-            self.sql.insert_into(self.table_name, df, chunksize=10000)
+            retryer = Retrying(**RETRY_PARAMS)
+            retryer(self.sql.insert_into(self.table_name, df, chunksize=10000))
         except DataError:
             # In case of failure, at least upload one-by-one to identify the bad row.
             split_dfs = [df.loc[[i]] for i in df.index]
@@ -166,10 +172,7 @@ class EndPoint:
         if self.config.DEBUG:
             batch.execute()
         else:
-            retryer = Retrying(
-                stop=stop_after_attempt(5),
-                wait=wait_exponential(multiplier=1, min=4, max=10),
-            )
+            retryer = Retrying(**RETRY_PARAMS)
             retryer(batch.execute)
 
     @elapsed
