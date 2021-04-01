@@ -4,7 +4,7 @@ import logging
 import os
 import time
 import pandas as pd
-from tenacity import stop_after_attempt, wait_exponential, retry, Retrying
+from tenacity import stop_after_attempt, wait_exponential, Retrying
 from sqlalchemy.schema import DropTable
 from sqlalchemy.exc import NoSuchTableError, DataError
 from timer import elapsed
