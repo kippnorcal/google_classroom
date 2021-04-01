@@ -168,10 +168,11 @@ def sync_all_data(config, creds, sql):
 
 def get_args():
     """ Return list of runtime args for use in mailer notifications"""
-    args = sys.argv
-    args = args[1:]
+    args = sys.argv[1:]
     args = [arg.replace("--", "") for arg in args]
-    return ", ".join(args)
+    args = ", ".join(args)
+    prefix = ": " if args else ""
+    return f"{prefix}{args}"
 
 
 if __name__ == "__main__":
@@ -182,6 +183,6 @@ if __name__ == "__main__":
         logging.exception(e)
         error_message = traceback.format_exc()
     if not Config.DISABLE_MAILER:
-        Mailer(Config, f"Google Classroom Connector: {get_args()}").notify(
+        Mailer(Config, f"Google Classroom Connector{get_args()}").notify(
             error_message=error_message
         )
