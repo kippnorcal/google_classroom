@@ -101,8 +101,11 @@ class EndPoint:
             f"{self.classname()}: inserting {len(df)} records into {self.table_name}."
         )
         try:
-            retryer = Retrying(**RETRY_PARAMS)
-            retryer(self.sql.insert_into(self.table_name, df, chunksize=10000))
+            if self.config.DEBUG:
+                self.sql.insert_into(self.table_name, df, chunksize=10000)
+            else:
+                retryer = Retrying(**RETRY_PARAMS)
+                retryer(self.sql.insert_into(self.table_name, df, chunksize=10000))
         except DataError:
             # In case of failure, at least upload one-by-one to identify the bad row.
             split_dfs = [df.loc[[i]] for i in df.index]
