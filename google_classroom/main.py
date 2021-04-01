@@ -166,6 +166,14 @@ def sync_all_data(config, creds, sql):
     print("Data syncing is not yet available.")
 
 
+def get_args():
+    """ Return list of runtime args for use in mailer notifications"""
+    args = sys.argv
+    args = args[1:]
+    args = [arg.replace("--", "") for arg in args]
+    return ", ".join(args)
+
+
 if __name__ == "__main__":
     try:
         main(Config)
@@ -174,4 +182,6 @@ if __name__ == "__main__":
         logging.exception(e)
         error_message = traceback.format_exc()
     if not Config.DISABLE_MAILER:
-        Mailer(Config, "Google Classroom Connector").notify(error_message=error_message)
+        Mailer(Config, f"Google Classroom Connector: {get_args()}").notify(
+            error_message=error_message
+        )
