@@ -23,7 +23,7 @@ from endpoints import (
     Teachers,
     Topics,
 )
-from config import Config, db_generator
+from config import Config, db_generator, get_args
 from mailer import Mailer
 
 
@@ -174,4 +174,5 @@ if __name__ == "__main__":
         logging.exception(e)
         error_message = traceback.format_exc()
     if not Config.DISABLE_MAILER:
-        Mailer(Config, "Google Classroom Connector").notify(error_message=error_message)
+        jobname = f"Google Classroom Connector{get_args(Config)}"
+        Mailer(Config, jobname).notify(error_message=error_message)

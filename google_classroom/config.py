@@ -146,6 +146,14 @@ class TestConfig(Config):
     STUDENT_ORG_UNIT = "Test Organization 2"
 
 
+def get_args(config):
+    args = vars(config.args)
+    args = [k for k, v in args.items() if v]
+    prefix = ": " if args else ""
+    args = ", ".join(args)
+    return f"{prefix}{args}"
+
+
 def db_generator(config):
     db_type = config.DB_TYPE
     default_config = {
