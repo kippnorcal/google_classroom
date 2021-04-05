@@ -168,12 +168,11 @@ def sync_all_data(config, creds, sql):
 
 if __name__ == "__main__":
     try:
-        main(Config)
+        # main(Config)
         error_message = None
     except Exception as e:
         logging.exception(e)
         error_message = traceback.format_exc()
     if not Config.DISABLE_MAILER:
-        config = Config()
-        jobname = f"Google Classroom Connector{config.get_args()}"
+        jobname = f"Google Classroom Connector{Config.get_args()}"
         Mailer(Config, jobname).notify(error_message=error_message)

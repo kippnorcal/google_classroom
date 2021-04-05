@@ -130,8 +130,9 @@ class Config(object):
     MEET_BATCH_SIZE = int(os.getenv("MEET_BATCH_SIZE") or 1000)
     PAGE_SIZE = int(os.getenv("PAGE_SIZE") or 1000)
 
-    def get_args(self):
-        args = vars(self.args)
+    @classmethod
+    def get_args(cls):
+        args = vars(cls.args)
         args = [k for k, v in args.items() if v]
         prefix = ": " if args else ""
         args = ", ".join(args)
