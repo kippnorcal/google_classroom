@@ -168,7 +168,7 @@ def sync_all_data(config, creds, sql):
 
 if __name__ == "__main__":
     try:
-        # main(Config)
+        main(Config)
         error_message = None
     except Exception as e:
         logging.exception(e)
