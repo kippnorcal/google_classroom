@@ -4,11 +4,16 @@ import logging
 import os
 import time
 import pandas as pd
-from tenacity import stop_after_attempt, wait_exponential, Retrying
+from tenacity import stop_after_attempt, wait_exponential, retry, Retrying
 from sqlalchemy.schema import DropTable
 from sqlalchemy.exc import NoSuchTableError, DataError
 from timer import elapsed
 import endpoints
+
+RETRY_PARAMS = {
+    "stop": stop_after_attempt(5),
+    "wait": wait_exponential(multiplier=1, min=4, max=10),
+}
 
 
 class EndPoint:
@@ -90,6 +95,7 @@ class EndPoint:
             df = df.astype(date_types)
         return df
 
+    @retry(**RETRY_PARAMS)
     def _write_to_db(self, df):
         """Writes the data into the related table"""
         logging.debug(
@@ -166,10 +172,7 @@ class EndPoint:
         if self.config.DEBUG:
             batch.execute()
         else:
-            retryer = Retrying(
-                stop=stop_after_attempt(5),
-                wait=wait_exponential(multiplier=1, min=4, max=10),
-            )
+            retryer = Retrying(**RETRY_PARAMS)
             retryer(batch.execute)
 
     @elapsed
