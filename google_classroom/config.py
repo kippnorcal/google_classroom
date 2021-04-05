@@ -130,6 +130,13 @@ class Config(object):
     MEET_BATCH_SIZE = int(os.getenv("MEET_BATCH_SIZE") or 1000)
     PAGE_SIZE = int(os.getenv("PAGE_SIZE") or 1000)
 
+    def get_args(self):
+        args = vars(self.args)
+        args = [k for k, v in args.items() if v]
+        prefix = ": " if args else ""
+        args = ", ".join(args)
+        return f"{prefix}{args}"
+
 
 class TestConfig(Config):
     DB_TYPE = "mssql"
@@ -144,14 +151,6 @@ class TestConfig(Config):
     DISABLE_MAILER = True
     SCHOOL_YEAR_START = "2020-01-01"
     STUDENT_ORG_UNIT = "Test Organization 2"
-
-
-def get_args(config):
-    args = vars(config.args)
-    args = [k for k, v in args.items() if v]
-    prefix = ": " if args else ""
-    args = ", ".join(args)
-    return f"{prefix}{args}"
 
 
 def db_generator(config):
