@@ -174,4 +174,5 @@ if __name__ == "__main__":
         logging.exception(e)
         error_message = traceback.format_exc()
     if not Config.DISABLE_MAILER:
-        Mailer(Config, "Google Classroom Connector").notify(error_message=error_message)
+        jobname = f"Google Classroom Connector{Config.get_args()}"
+        Mailer(Config, jobname).notify(error_message=error_message)
